@@ -1,0 +1,41 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "usuario",
+  "model": "ollama/qwen2.5-coder:14b-instruct-q4_K_M",
+  "small_model": "ollama/qwen2.5:7b-instruct-q4_K_M",
+  "default_agent": "jayu",
+  "enabled_providers": ["ollama"],
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama local",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "qwen2.5-coder:14b-instruct-q4_K_M": {
+          "name": "Qwen 2.5 Coder 14B Q4_K_M",
+          "tool_call": true,
+          "limit": { "context": 32768, "output": 8192 }
+        },
+        "qwen2.5:7b-instruct-q4_K_M": {
+          "name": "Qwen 2.5 7B Q4_K_M",
+          "tool_call": true,
+          "limit": { "context": 32768, "output": 4096 }
+        },
+        "nomic-embed-text": {
+          "name": "Nomic Embed Text",
+          "limit": { "context": 2048, "output": 768 }
+        }
+      }
+    }
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "git *": "allow",
+      "*": "ask"
+    }
+  }
+}
