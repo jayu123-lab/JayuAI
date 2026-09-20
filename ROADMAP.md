@@ -46,9 +46,13 @@ Orienta el desarrollo por fases. Una fase NO se marca terminada sin tests.
 - [ ] Captura de pantalla, detección de botones, lectura de interfaces.
 - [ ] Interpretar gráficos de MT5/TradingView a largo plazo.
 
-## FASE 8 — Motor multiagente
-- [ ] Governor + Macro/Technical/Order Flow/Fundamental/Sentiment/Risk/
-      Execution; Governor combina los votos en un bias.
+## FASE 8 — Motor multiagente  ✅ (v0.5.0)
+- [x] `jayu/agents/`: Governor coordina la cadena researcher → risk_manager →
+      governor; combina análisis, valida riesgo y emite decisión + propuestas.
+- [x] Las propuestas NUNCA se ejecutan por sí solas: solo vía política +
+      modo de trading + confirmación humana + auditoría.
+- [ ] Ampliar el elenco de especialistas (order flow, sentimiento, macro…) y
+      agentes guiados por LLM (base `Agent` ya lista).
 
 ## FASE 9 — Self-improvement
 - [ ] Propuesta → rama git → cambios → tests → diff → registro → merge

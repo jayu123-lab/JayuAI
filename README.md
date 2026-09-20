@@ -37,7 +37,7 @@ modular hacia voz, web, mercados, MT5 y control de PC.
 python -m pytest tests -q
 ```
 
-## Lo que ya funciona (FASES 1 + 5 + 6)
+## Lo que ya funciona (FASES 1 + 5 + 6 + 8)
 
 - **Núcleo orquestador**: intención → plan → router de modelos → ejecución →
   validación → memoria → respuesta (trazable).
@@ -58,6 +58,11 @@ python -m pytest tests -q
   indicadores (RSI/ATR/EMA), estructura (BOS/CHoCH), SMC (FVG, Order Blocks,
   premium/discount) y bias BULLISH/BEARISH/NEUTRAL con razones explícitas
   (skill `market_intelligence`).
+- **Multi-agente de mercado (Fase 8)**: governor que coordina
+  `researcher → risk_manager → governor`, decide (dirección + convicción) y
+  emite propuestas con SL/TP derivados de estructura. NUNCA ejecuta por sí
+  solo: `execute` pasa por política + modo de trading + confirmación humana +
+  auditoría (skill `market_governor`).
 - **Configuración centralizada** en `config/*.yaml`, secretos solo en entorno
   (`.env.example`).
 

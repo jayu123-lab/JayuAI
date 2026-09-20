@@ -2,6 +2,44 @@
 
 Todas las decisiones y cambios relevantes de JAYU_JAR.
 
+## [0.5.0] — 2026-09-20 — FASE 8: motor multiagente de mercado
+
+### Añadido
+- **`jayu/agents/` — equipo de agentes coordinado por un GOVERNOR** (nueva capa
+  sobre market_intelligence + MT5):
+  - `base.py` — `Agent`/`AgentResult`: contrato común; los agentes reciben una
+    tarea y devuelven un resultado auditable. La base está lista para agentes
+    guiados por LLM (router) en fases posteriores.
+  - `market.py` — tres roles:
+    - `MarketResearcher`: analiza el mercado (velas MT5 reales) y devuelve un
+      resumen accionable (bias, estructura, indicadores, SMC).
+    - `RiskManager`: valida el riesgo de un plan — dimensiona el lote máximo,
+      chequea spread vs límite, posiciones abiertas por símbolo y pérdida
+      diaria (solo sugiere y advierte; nunca dimensiona la creación).
+    - `MarketGovernor`: coordina la cadena, agrega y DECIDE (dirección +
+      convicción + razones + plan SL/TP derivado de estructura con RR 1.5).
+      NUNCA ejecuta: emite propuestas clasificadas REVIEW.
+- **Skill `market_governor`**: `run` (SAFE, análisis multi-agente) y `execute`
+  (REVIEW, ejecuta SOLO una propuesta emitida por `run`, vía MT5Executor:
+  política + modo trading + auditoría + registro de propuestas consumidas).
+  Propuestas inventadas o caducadas → rechazo honesto.
+- **Permisos**: `market.governor` SAFE. `execute` reutiliza `mt5.market_order`
+  (REVIEW). Config `governor:` en `config/trading.yaml` (threshold,
+  propose_trades, conviction_min, take_profit_rr, sl_fallback_atr_mult).
+- **Tests** — 14 nuevos (governor unitario determinista, RiskManager con
+  FakeMT5, skill por orquestador con run/execute/READ_ONLY/CONFIRM/auditoría).
+  Total 123 pasan.
+
+### Validación con datos reales
+- Governor sobre XAUUSD H1 (FTMO): cadena researcher→risk_manager, decisión
+  BULLISH score 3 (convicción 1.0), plan BUY (SL = swing bajo 4342.64, TP =
+  RR 1.5 → 4430.49), volumen 0.31 por 2% de riesgo. `execute` bloqueado con
+  `trading_mode=READ_ONLY` (doble defensa: política + modo de trading).
+
+### Corregido
+- `MarketGovernor.run`: el resultado del researcher se serializaba con
+  `as_dict()` antes de pasarlo al RiskManager (evita AttributeError).
+
 ## [0.4.0] — 2026-09-20 — FASE 5: market intelligence (análisis real MT5)
 
 ### Añadido

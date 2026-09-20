@@ -24,6 +24,7 @@ actions:
   "market.structure": SAFE     # swings/BOS/CHoCH
   "market.analyze": SAFE       # pipeline completo de análisis
   "market.bias": SAFE          # bias BULLISH/BEARISH/NEUTRAL
+  "market.governor": SAFE      # multi-agente de mercado (Fase 8): SOLO análisis
   "model.ping": SAFE
   "model.list": SAFE
   "llm.chat": SAFE

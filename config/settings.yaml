@@ -5,7 +5,7 @@
 # variables de entorno locales (ver .env.example) y nunca en el repo.
 
 name: JAYU_JAR
-version: 0.4.0
+version: 0.5.0
 language: es          # idioma por defecto de las respuestas
 timezone: Europe/Madrid
 

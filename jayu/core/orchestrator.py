@@ -29,6 +29,7 @@ from ..skills.base import SkillError
 from ..skills.builtin import memory as memory_skill_module
 from ..skills.builtin import mt5 as mt5_skill_module
 from ..skills.builtin import market as market_skill_module
+from ..skills.builtin import multiagent as multiagent_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.builtin.web import register as register_web
 from ..skills.builtin.voice import register as register_voice
@@ -121,6 +122,13 @@ class Orchestrator:
             lambda: self.mt5_sizer,
         )
         self.registry.register(mt5_skill)
+        governor_skill = multiagent_skill_module.make_market_governor_skill(
+            lambda: self.mt5_connector,
+            lambda: self.mt5_executor,
+            lambda: self.mt5_sizer,
+            lambda: self.settings.trading_conf,
+        )
+        self.registry.register(governor_skill)
 
     # ------------------------------------------------------------------
     # Disponibilidad de modelos

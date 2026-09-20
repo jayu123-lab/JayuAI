@@ -111,12 +111,21 @@ módulo. El backend vectorial (ChromaDB) se activará cuando esté instalado.
 - `analyzer.py` — `MarketAnalyzer`: velas MT5 → análisis completo.
 - Todo es ANÁLISIS puro; nada de esto ejecuta órdenes.
 
+### `jayu/agents/` — multi-agente de mercado (Fase 8)
+- `base.py` — `Agent`/`AgentResult` (contrato auditable; preparado para LLM).
+- `market.py` — `MarketResearcher` (análisis) → `RiskManager` (riesgo) →
+  `MarketGovernor` (decisión + propuestas). El governor NUNCA ejecuta: las
+  propuestas solo se ejecutan por la ruta protegida (política + modo trading +
+  confirmación + auditoría).
+
 ### `jayu/skills/` — capacidades extensibles
 Cada skill registra nombre, descripción, categoría, herramientas y acciones
 de permiso (por tool vía `tool_actions`). Skills actuales:
 - `system`, `memory` (funcionales),
 - `mt5` (Fase 6): lectura SAFE + ejecución gateada,
 - `market_intelligence` (Fase 5): análisis real sobre MT5 (solo lectura),
+- `market_governor` (Fase 8): multi-agente que decide y propone (ejecuta solo
+  con confirmación),
 - `web_research` (Fase 3) y `voice` (Fase 2): registradas, devuelven
   `ok=False` explícito hasta su fase (no se simula nada).
 
@@ -128,7 +137,7 @@ REPL con comandos `/status /models /skills /memory /audit /forget /mt5 /voice
 
 1. ✅ Core + modelos + memoria + terminal
 2. [ ] Voz       3. [ ] Web      4. [ ] PC       5. ✅ Mercados
-6. ✅ MT5       7. [ ] Visión    8. [ ] Multiagente   9. [ ] Self-improvement
+6. ✅ MT5       7. [ ] Visión    8. ✅ Multiagente   9. [ ] Self-improvement
 10. [ ] UI       11. [ ] Optimización     12. [ ] Testing exhaustivo
 
 ## Decisiones de arquitectura relevantes

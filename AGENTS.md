@@ -40,8 +40,13 @@ aprenda algo que deba persistir siempre (reglas, convenciones, decisiones).
 ## Arquitectura de agentes
 
 - `jayu` (primario): orquestador de todo. Permisos ask en lo sensible.
-- `researcher`, `operator`, `memory-keeper`, `self-improver`: definidos como
-  objetivo en README/AGENTS pero NO creados todavía (pin en Fases 3-9).
+- FASE 8 IMPLEMENTADA en el núcleo Python: `jayu/agents/` con governor de
+  mercado (`MarketGovernor`, skill `market_governor`) que coordina
+  `MarketResearcher` + `RiskManager`; emite propuestas que solo se ejecutan
+  con política + modo de trading + confirmación + auditoría.
+- `researcher`, `operator`, `memory-keeper`, `self-improver` (agentes LLM):
+  definidos como objetivo en README/AGENTS pero NO creados todavía (pin en
+  Fases 3-9).
 - El núcleo Python (`jayu/`) ya sitúa permisos, memoria y auditoría debajo de
   la capa de agentes.
 
@@ -58,10 +63,12 @@ aprenda algo que deba persistir siempre (reglas, convenciones, decisiones).
 - [x] FASE 1 — Core + modelos + memoria + terminal (v0.2.0, 38 tests)
 - [x] FASE 5 — Market intelligence (v0.4.0, 109 tests)
 - [x] FASE 6 — MT5 (READ_ONLY → CONFIRM → AUTONOMOUS off) (v0.3.0)
+- [x] FASE 8 — Multiagente de mercado (v0.5.0, 123 tests):
+      governor (researcher → risk_manager → governor); propuestas que solo
+      ejecutan con confirmación humana.
 - [ ] FASE 2 — Voz (faster-whisper + Piper + VAD)
 - [ ] FASE 3 — Internet (SearXNG + Playwright)
 - [ ] FASE 4 — Control de PC (Windows)
 - [ ] FASE 7 — Visión
-- [ ] FASE 8 — Multiagente de mercado
 - [ ] FASE 9 — Autoprogramación con gate humano
 - [ ] FASE 10-12 — UI, optimización, testing exhaustivo

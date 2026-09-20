@@ -27,6 +27,16 @@ risk:
   max_daily_loss_pct: 3.0             # límite de pérdida diaria
   max_spread_threshold: null          # null = sin límite configurado
 
+# ---------- Fase 8: governor multi-agente ----------
+# El governor coordina researcher -> risk_manager -> governor y emite
+# PROPUESTAS (REVIEW). NUNCA ejecuta por su cuenta.
+governor:
+  threshold: 2                 # |score| mínimo del BiasEngine para BULLISH/BEARISH
+  propose_trades: true         # emitir propuestas priorizadas (advisory)
+  conviction_min: 0.5          # convicción mínima para proponer (0..1)
+  take_profit_rr: 1.5          # ratio TP/riesgo en las propuestas
+  sl_fallback_atr_mult: 1.5    # SL por ATR si no hay swing válido
+
 mt5:
   symbol_prefix: ""
   account_risk_limit_contact: true    # avisar si se supera límite configurado
