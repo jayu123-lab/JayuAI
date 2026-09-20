@@ -27,15 +27,24 @@ risk:
   max_daily_loss_pct: 3.0             # límite de pérdida diaria
   max_spread_threshold: null          # null = sin límite configurado
 
-# ---------- Fase 8: governor multi-agente ----------
-# El governor coordina researcher -> risk_manager -> governor y emite
-# PROPUESTAS (REVIEW). NUNCA ejecuta por su cuenta.
+# ---------- Fase 8 (ampliada): governor multi-agente ----------
+# El governor coordina researcher (técnico) + analistas especialistas
+# (macro y sentimiento) + risk_manager y emite PROPUESTAS (REVIEW).
+# NUNCA ejecuta por su cuenta.
 governor:
   threshold: 2                 # |score| mínimo del BiasEngine para BULLISH/BEARISH
   propose_trades: true         # emitir propuestas priorizadas (advisory)
   conviction_min: 0.5          # convicción mínima para proponer (0..1)
   take_profit_rr: 1.5          # ratio TP/riesgo en las propuestas
   sl_fallback_atr_mult: 1.5    # SL por ATR si no hay swing válido
+  # --- Especialistas (Fase 8 ampliada: macro, sentimiento) ---
+  enable_macro: true           # analista macro: FED, tasas reales, DXY, bonos,
+                               # bancos centrales (KB oro + contexto/quotas)
+  enable_sentiment: true       # analista de sentimiento por titulares
+  weights:                     # peso de cada voto en la decisión combinada
+    technical: 1.0             # técnico (estructura, bias, SMC)
+    macro: 0.4                 # macro/fundamental (oro es ultra-sensible a esto)
+    sentiment: 0.25            # sentimiento de noticias
 
 mt5:
   symbol_prefix: ""

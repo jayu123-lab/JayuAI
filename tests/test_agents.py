@@ -204,11 +204,16 @@ def test_orquestador_skill_market_governor_run(tmp_settings,
         assert res["ok"] is True
         assert res["decision"]["direction"] in ("BULLISH", "BEARISH",
                                                 "NEUTRAL")
-        assert res["chain"]["order"] == ["researcher", "risk_manager"]
+        assert res["chain"]["order"] == ["researcher", "macro_analyst",
+                                         "sentiment_analyst",
+                                         "risk_manager"]
         assert res["executed"] == []
         # con FakeMT5 el bias es determinista: se genera una propuesta
         assert len(res["proposals"]) == 1
         assert res["proposals"][0]["action"] == "market_order"
+        # los especialistas votan (aunque sea NEUTRAL al no haber contexto)
+        assert res["decision"]["votes"]["technical"]["vote"] != 0
+        assert "macro" in res["decision"]["votes"]
     finally:
         orch.close()
 
@@ -284,5 +289,130 @@ def test_orquestador_skill_market_governor_honesto_sin_mt5(
                              interactive=False)
         assert res["ok"] is False
         assert res["chain"]["agents"][0]["error"]
+    finally:
+        orch.close()
+
+
+# ----------------------------------------------------------------------
+# Especialistas (Fase 8 ampliada): macro y sentimiento
+# ----------------------------------------------------------------------
+
+def test_macro_analyst_vota_bullish_con_contexto():
+    from jayu.agents.market import MacroAnalyst
+    macro = MacroAnalyst()
+    res = macro.run({"macro_context": {
+        "rate_expectation": "cuts",
+        "inflation_trend": "high",
+        "central_bank_buying": "strong"}})
+    assert res.ok
+    s = res.summary
+    assert s["vote"] > 0 and s["direction"] == "BULLISH"
+    assert "RECORTES" in " ".join(s["reasons"]).upper()
+
+
+def test_macro_analyst_honesto_sin_datos():
+    from jayu.agents.market import MacroAnalyst
+    macro = MacroAnalyst(quote_fn=lambda _s: None)
+    res = macro.run({"macro_context": {}})
+    assert res.ok
+    assert res.summary["vote"] == 0
+    assert res.summary["direction"] == "NEUTRAL"
+    assert res.summary["data_status"] == "pendiente"
+
+
+def test_sentiment_analyst_positivo_y_negativo():
+    from jayu.agents.market import SentimentAnalyst
+    sent = SentimentAnalyst()
+    pos = {"headlines": [
+        "El oro sube respaldado por expectativas de recorte de la FED",
+        "Los bancos centrales compran oro ante la inflación alta",
+        "El oro marca máximos como refugio por el riesgo geopolítico"]}
+    rp = sent.run(pos)
+    assert rp.ok and rp.summary["vote"] > 0
+    assert rp.summary["direction"] == "BULLISH"
+    assert rp.summary["positivos"] >= 3
+
+    neg = {"headlines": [
+        "El oro cae por la presión del dólar fuerte",
+        "Suben las tasas del Tesoro y pesa sobre el metal",
+        "Ventas de ETF de oro ante la toma de beneficios"]}
+    rn = sent.run(neg)
+    assert rn.ok and rn.summary["vote"] < 0
+    assert rn.summary["direction"] == "BEARISH"
+
+
+def test_sentiment_analyst_sin_titulares():
+    from jayu.agents.market import SentimentAnalyst
+    res = SentimentAnalyst().run({"headlines": []})
+    assert res.ok
+    assert res.summary["vote"] == 0
+    assert res.summary["data_status"] == "pendiente"
+
+
+def test_governor_coalicion_cambia_direccion_al_tecnico():
+    """Técnico BULLISH, pero macro + sentimiento muy bajistas: la coalición
+    domina y la propuesta final es SELL (votación ponderada)."""
+    from jayu.agents.market import MacroAnalyst, SentimentAnalyst
+    macro = MacroAnalyst()
+    sent = SentimentAnalyst()
+    gov = MarketGovernor(_stub_researcher(_research()),
+                         _stub_risk(_risk()),
+                         macro_analyst=macro, sentiment_analyst=sent,
+                         weights={"technical": 1.0, "macro": 0.4,
+                                  "sentiment": 0.25},
+                         threshold=2, cfg={})
+    out = gov.run({
+        "symbol": "XAUUSD",
+        "macro_context": {"rate_expectation": "hikes",
+                          "inflation_trend": "cooling",
+                          "central_bank_buying": "low"},
+        "headlines": [
+            "El oro cae por la presión del dólar fuerte",
+            "Suben las tasas del Tesoro y pesa sobre el metal",
+            "Ventas de ETF de oro",
+            "El oro pierde terreno ante un dólar firme"]})
+    assert out["ok"] is True
+    votes = out["decision"]["votes"]
+    assert votes["technical"]["vote"] == 3          # técnico BULLISH
+    assert votes["macro"]["vote"] < 0
+    assert votes["sentiment"]["vote"] < 0
+    assert out["decision"]["direction"] == "BEARISH"  # coalición domina
+    assert out["decision"]["score"] < 0
+    assert out["proposals"][0]["params"]["side"] == "SELL"
+    assert out["chain"]["order"] == ["researcher", "macro_analyst",
+                                     "sentiment_analyst", "risk_manager"]
+
+
+def test_governor_coalicion_respeta_tecnico_dominante():
+    """Con técnico BULLISH fuerte y especialistas neutrales (sin datos),
+    la dirección se mantiene BULLISH."""
+    from jayu.agents.market import MacroAnalyst, SentimentAnalyst
+    gov = MarketGovernor(_stub_researcher(_research()),
+                         _stub_risk(_risk()),
+                         macro_analyst=MacroAnalyst(),
+                         sentiment_analyst=SentimentAnalyst(),
+                         threshold=2, cfg={})
+    out = gov.run({"symbol": "XAUUSD"})
+    assert out["decision"]["direction"] == "BULLISH"
+    assert out["proposals"][0]["params"]["side"] == "BUY"
+
+
+def test_skill_run_acepta_macro_contexto_y_headlines(tmp_settings,
+                                                     fake_providers):
+    from jayu.core.orchestrator import Orchestrator
+    orch = Orchestrator(settings=tmp_settings,
+                        providers_override=fake_providers,
+                        confirmer=lambda _p: True,
+                        mt5_module=FakeMT5())
+    try:
+        res = orch.run_skill("market_governor", "run", {
+            "symbol": "XAUUSD", "timeframe": "H1", "count": 120,
+            "macro_context": {"rate_expectation": "cuts",
+                              "central_bank_buying": "strong"},
+            "headlines": ["El oro sube respaldado por recortes esperados"]},
+            interactive=False)
+        assert res["ok"] is True
+        assert res["decision"]["votes"]["macro"]["data_status"] == "ok"
+        assert res["decision"]["votes"]["sentiment"]["data_status"] == "ok"
     finally:
         orch.close()

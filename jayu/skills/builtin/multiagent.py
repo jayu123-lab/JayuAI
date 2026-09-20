@@ -16,7 +16,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from ...agents.market import MarketGovernor, MarketResearcher, RiskManager
+from ...agents.market import (MarketGovernor, MarketResearcher,
+                               MacroAnalyst, RiskManager,
+                               SentimentAnalyst)
+from ...kb.gold import gold_context
 from ...market.analyzer import MarketAnalyzer
 from ...mt5.connector import MT5Error
 from ..base import Skill
@@ -41,15 +44,47 @@ def make_market_governor_skill(get_connector, get_executor, get_sizer,
             lambda s, tf, cnt: MarketAnalyzer(conn).analyze(s, tf, cnt))
         risk_manager = RiskManager(conn, get_sizer(),
                                    conf.get("risk") or {})
-        return MarketGovernor(researcher, risk_manager,
-                              threshold=threshold, cfg=governor_cfg)
+        weights = dict(governor_cfg.pop("weights", {}) or {})
+        if weights:
+            governor_cfg["weights"] = weights
+        macro = None
+        sentiment = None
+        if governor_cfg.pop("enable_macro", True):
+            macro = MacroAnalyst(kb_fn=lambda: _gold_kb_context(conn),
+                                 quote_fn=getattr(conn, "quote", None)
+                                 or (lambda _s: None))
+        if governor_cfg.pop("enable_sentiment", True):
+            sentiment = SentimentAnalyst()
+        return MarketGovernor(
+            researcher, risk_manager,
+            macro_analyst=macro, sentiment_analyst=sentiment,
+            weights=weights or None,
+            threshold=threshold, cfg=governor_cfg)
+
+    def _gold_kb_context(conn) -> dict[str, Any]:
+        """Contexto macro desde la KB + quotes en vivo si el broker los da."""
+        try:
+            live = {}
+            for sym in ("XAUUSD", "XAGUSD", "DXY", "US10Y"):
+                try:
+                    q = conn.quote(sym)
+                    if q and q.get("bid") is not None:
+                        live[sym] = q["bid"]
+                except MT5Error:
+                    continue
+            return gold_context(live=live)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
 
     def run(symbol: str = "XAUUSD", timeframe: str = "H1",
-            count: int = 400) -> dict[str, Any]:
+            count: int = 400, macro_context: dict | None = None,
+            headlines: list[str] | None = None) -> dict[str, Any]:
         try:
             out = _governor().run({"symbol": symbol,
                                    "timeframe": timeframe,
-                                   "count": count})
+                                   "count": count,
+                                   "macro_context": macro_context or {},
+                                   "headlines": headlines or []})
         except MT5Error as exc:
             return _err(exc)
         # Las propuestas solo son ejecutables tras el run más reciente.
@@ -94,15 +129,16 @@ def make_market_governor_skill(get_connector, get_executor, get_sizer,
 
     return Skill(
         name="market_governor",
-        description="Multi-agente de mercado: researcher + risk_manager + "
-                    "governor emiten decisión y propuestas (NUNCA ejecuta "
+        description="Multi-agente de mercado: researcher (técnico) + "
+                    "analistas macro y sentimiento + risk_manager + governor "
+                    "emiten decisión combinada y propuestas (NUNCA ejecuta "
                     "sin confirmación humana).",
         category="market",
         tools={"run": run, "execute": execute},
         permission_actions=["market.governor", "mt5.market_order"],
         tool_actions={"run": "market.governor",
                       "execute": "mt5.market_order"},
-        version="0.1.0",
+        version="0.2.0",
     )
 
 
