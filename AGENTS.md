@@ -7,47 +7,57 @@ aprenda algo que deba persistir siempre (reglas, convenciones, decisiones).
 ## Restricciones duras
 
 - Todo software open source. Cero librerías/servicios de pago.
-- Cero llamadas a APIs de nube de pago. Razona 100% local vía Ollama.
-  El único proveedor habilitado en opencode es `ollama`.
-- Windows + GPU 6-12GB VRAM.
+- Cero llamadas a APIs de nube de pago como vía por defecto. Razonamiento
+  prioritario local vía Ollama. En opencode solo está habilitado `ollama`.
+- Windows + GPU 6-12GB VRAM (el VSMI puede funcionar sin GPU con modelos
+  pequeños).
 - Puede funcionar offline salvo funciones que explícitamente necesitan
   navegar (búsqueda web, lectura de páginas).
 - Ollama y SearXNG escuchan SOLO en 127.0.0.1.
 - Cero credenciales en el repo. Secretos vía variables de entorno locales.
+- NUNCA simular resultados: una capacidad no implementada se declara como tal.
 
 ## Stack
 
-- Orquestador: OpenCode (agentes, subagentes, herramientas custom, MCP).
+- Orquestador: OpenCode (agentes, subagentes, herramientas custom, MCP)
+  + NÚCLEO PYTHON (`jayu/`) que implementa core, memoria, router de modelos,
+  permisos y audit. Terminal: `main.py`.
 - LLM local: Ollama.
   - Principal: `qwen2.5-coder:14b-instruct-q4_K_M`
-  - Rápido / small_model: `qwen2.5:7b-instruct-q4_K_M`
+  - Rápido / fast_model: `qwen2.5:7b-instruct-q4_K_M`
+  - Small / clasificación: `qwen2.5:0.5b`
   - Embeddings: `nomic-embed-text`
-- Memoria: ChromaDB embebido en `memory/chroma/` + nomic-embed-text.
-- Internet: SearXNG autoalojado (sin API keys) + Playwright.
-- Control de PC: pywinauto + PyAutoGUI.
-- Control de versiones: git.
+- Memoria: SQLite en `data/jayu.db` (4 niveles + audit). Backend vectorial
+  (ChromaDB) en `memory/chroma/` pendiente.
+- Internet: SearXNG autoalojado (sin API keys) + Playwright — FASE 3.
+- Control de PC: pywinauto + PyAutoGUI — FASE 4.
+- Mercados: `market_intelligence` — FASE 5. MT5: `mt5_connector` — FASE 6.
 
 ## Arquitectura de agentes
 
 - `jayu` (primario): orquestador de todo. Permisos ask en lo sensible.
-- `researcher`: búsqueda/lectura web. Sin bash ni pc_control.
-- `operator`: control del PC (pywinauto/PyAutoGUI). Ask en todo destructivo.
-- `memory-keeper`: escritura/consulta de ChromaDB (memoria a largo plazo).
-- `self-improver`: propone mejoras al sistema, siempre en rama
-  `agent-proposals`, con tests mínimos, y aprobación humana para fusionar.
+- `researcher`, `operator`, `memory-keeper`, `self-improver`: definidos como
+  objetivo en README/AGENTS pero NO creados todavía (pin en Fases 3-9).
+- El núcleo Python (`jayu/`) ya sitúa permisos, memoria y auditoría debajo de
+  la capa de agentes.
 
 ## Aprendizaje (realista, sin fine-tuning)
 
-- Cada sesión relevante se resume y guarda en ChromaDB vía memory-keeper.
-- Este AGENTS.md es la memoria de alto nivel persistente.
-- `scripts/run_reflection.py` extrae aprendizajes de los logs y propone
-  actualizaciones (susceptible a tarea programada de Windows).
+- Cada sesión relevante se resume y guarda en memoria (SQLite a corto plazo,
+  long-term para preferencias/hechos; embeddings cuando ChromaDB exista).
+- `AGENTS.md` es la memoria de alto nivel persistente del proyecto.
+- Comandos `/memory` y `/audit` del terminal muestran lo aprendido y lo
+  ejecutado.
 
 ## Estado de fases
 
-- [ ] FASE 1 — Esqueleto y cerebro local
-- [ ] FASE 2 — Memoria RAG (ChromaDB)
+- [x] FASE 1 — Core + modelos + memoria + terminal (v0.2.0, 38 tests)
+- [ ] FASE 2 — Voz (faster-whisper + Piper + VAD)
 - [ ] FASE 3 — Internet (SearXNG + Playwright)
 - [ ] FASE 4 — Control de PC (Windows)
-- [ ] FASE 5 — Autoprogramación con gate humano
-- [ ] FASE 6 — Aprendizaje continuo
+- [ ] FASE 5 — Market intelligence
+- [ ] FASE 6 — MT5 (READ_ONLY → CONFIRM → AUTONOMOUS off)
+- [ ] FASE 7 — Visión
+- [ ] FASE 8 — Multiagente de mercado
+- [ ] FASE 9 — Autoprogramación con gate humano
+- [ ] FASE 10-12 — UI, optimización, testing exhaustivo

@@ -1,0 +1,41 @@
+# ============================================================
+# JAYU_JAR — Configuración general
+# ============================================================
+# Esta configuración NO contiene secretos. Los secretos van en
+# variables de entorno locales (ver .env.example) y nunca en el repo.
+
+name: JAYU_JAR
+version: 0.2.0
+language: es          # idioma por defecto de las respuestas
+timezone: Europe/Madrid
+
+# ---------- Rutas (relativas a la raíz del proyecto) ----------
+data_dir: data        # bases de datos sqlite
+log_dir: logs         # logs estructurados (JSON Lines)
+config_dir: config
+
+# ---------- Modelos por defecto ----------
+# Los roles y proveedores detallados viven en config/models.yaml
+default_provider: ollama
+default_model: qwen2.5-coder:14b-instruct-q4_K_M
+fast_model: qwen2.5:7b-instruct-q4_K_M
+small_model: qwen2.5:0.5b
+embedding_model: nomic-embed-text
+
+# ---------- Procesamiento ----------
+async_enabled: false   # reservado para Fases posteriores (streaming/concurrencia)
+concurrency: 1
+
+# ---------- Autonomía ----------
+# Niveles de autonomía global:
+#   read_only                -> solo lectura, nada ejecuta
+#   confirm_before_execution -> pregunta antes de REVIEW/DANGEROUS
+#   autonomous               -> permite REVIEW, DANGEROUS siempre pregunta
+autonomy_level: confirm_before_execution
+
+# ---------- Memoria ----------
+memory:
+  db_file: jayu.db
+  session_retention: 100        # mensajes corto plazo retenidos por sesión
+  vector_backend: chroma        # "chroma" si está instalado, si no -> sqlite LIKE
+  embeddings_enabled: false     # activar cuando nomic-embed-text esté descargado

@@ -1,0 +1,119 @@
+# JAYU_JAR — Arquitectura
+
+Versión 0.2.0 · Estado: FASE 1 (core + modelos + memoria + terminal)
+
+## Visión
+
+JAYU_JAR es un asistente personal inteligente local (Windows), con voz
+femenina, orientado a IA, automatización, programación y análisis avanzado de
+mercados financieros. El objetivo final: "mi sistema operativo inteligente
+personal".
+
+## Principios
+
+1. **Análisis ≠ Ejecución.** La ejecución (órdenes de trading, escritura en
+   disco, comandos del sistema) tiene capa de permisos independiente.
+2. **Default-deny.** Sin política explícita, una acción requiere revisión.
+3. **Nada inventado.** Cualquier capacidad no implementada se declara
+   explícitamente (`ok=False`) con su fase de referencia.
+4. **Local primero.** Llama/razona prioritariamente con modelos locales
+   (Ollama). Los proveedores externos están desactivados por defecto.
+5. **Velocidad.** Modelo más rápido que cumpla la tarea; clasificación por
+   reglas sin LLM; logs estructurados sin bloqueo.
+
+## Dos capas complementarias
+
+```
+OpenCode (shell de agentes)          Python (cerebro ejecutable)
+┌───────────────────────────┐       ┌──────────────────────────────┐
+│ opencode.json             │       │ jayu/core   orquestador      │
+│ .opencode/agent/jayu.md   │       │ jayu/memory SQLite 4 niveles │
+│ agentes/subagentes        │──────▶│ jayu/models  router          │
+│        │                  │       │ jayu/security permisos+audit │
+│        └── custom tools ──┼──────▶│ jayu/skills  registro        │
+└───────────────────────────┘       │ main.py      terminal        │
+                                    └──────────────────────────────┘
+```
+
+OpenCode se mantiene como capa de agente histórica y compatible. El núcleo
+Python ejecuta el pipeline racional y es el que se despliega en terminal,
+tests y (en el futuro) UI.
+
+## Pipeline de una solicitud
+
+```
+OBJECTIVE ──▶ INTENT ──▶ PLAN ──▶ ROUTER ──▶ EXECUTION ──▶ VALIDATION
+     │          │          │         │            │             │
+classify_intent│  build_   │  ModelRouter:      llm/skill     comprueba
+(reglas, sin)  │  default_ │  rol + complejidad ejecución     resultado
+LLM            │  plan     │  + disponibilidad   auditable     no vacío
+     ▼          ▼          ▼          ▼            ▼             ▼
+MEMORY (short-term)                        RESULT ──▶ RESPONSE
+```
+
+Cada paso es trazable: `working` (tarea), `episodic` (qué se hizo) y
+`audit_log` (quién/qué/cuándo/por qué/herramienta/resultado).
+
+## Módulos
+
+### `config/` — configuración centralizada
+`settings.yaml` (núcleo), `models.yaml` (proveedores + routing),
+`permissions.yaml` (clasificación SAFE/REVIEW/DANGEROUS + modos),
+`trading.yaml` (modo de trading, riesgo), `voice.yaml` (pipeline voz).
+Sobreescritura por variables de entorno `JAYU_*`. Secretos solo en entorno.
+
+### `jayu/core/` — orquestador
+- `intent.py`    → clasificación de intención por reglas (rápida, sin LLM).
+- `plan.py`      → definición de plan con pasos y validación.
+- `persona.py`   → prompt de sistema de JAYU (identidad, seguridad).
+- `orchestrator.py` → enlaza intent→plan→router→ejecución→memoria→auditoría.
+
+### `jayu/memory/` — memoria persistente (SQLite, stdlib)
+| Tabla | Nivel | Contenido |
+|---|---|---|
+| `short_term` | short-term | contexto de conversación por sesión |
+| `working` | working | tareas activas / objetivos |
+| `long_term` | long-term | hechos, preferencias, aprendizaje (clave→valor) |
+| `episodic` | episodic | historial de acciones de JAYU |
+| `audit_log` | seguridad | registro de decisiones y ejecuciones |
+
+Diseñada para migrar a PostgreSQL / vector DB / RAG cambiando solo este
+módulo. El backend vectorial (ChromaDB) se activará cuando esté instalado.
+
+### `jayu/models/` — router de modelos
+- `providers.py` → cliente OpenAI-compatible (Ollama local por defecto).
+- `router.py` → elige proveedor+modelo por rol de tarea y complejidad
+  (classify→small, chat→fast, code→default, market/reason→deep).
+- Degradación honesta: si el modelo ideal no está instalado, usa el más
+  rápido disponible y lo indica en `mode`.
+
+### `jayu/security/` — permisos y auditoría
+- Clasificación `SAFE / REVIEW / DANGEROUS` (globulamas, la más específica
+  gana, fallback REVIEW).
+- Modos `read_only / confirm_before_execution / autonomous`.
+- Toda decisión se escribe en `audit_log` antes y después de ejecutar.
+
+### `jayu/skills/` — capacidades extensibles
+Cada skill registra nombre, descripción, categoría, herramientas y acciones
+de permiso. Skills actuales: `system`, `memory` (funcionales), `web_research`
+y `market_intelligence` (registradas, devuelven `ok=False` hasta su fase),
+`voice` (Fase 2).
+
+### `main.py` — terminal
+REPL con comandos `/status /models /skills /memory /audit /forget /voice
+/clear /exit` y modo `--once "mensaje"` para automatización.
+
+## Fases (ROADMAP en `ROADMAP.md`)
+
+1. ✅ Core + modelos + memoria + terminal
+2. [ ] Voz       3. [ ] Web      4. [ ] PC       5. [ ] Mercados
+6. [ ] MT5       7. [ ] Visión    8. [ ] Multiagente   9. [ ] Self-improvement
+10. [ ] UI       11. [ ] Optimización     12. [ ] Testing exhaustivo
+
+## Decisiones de arquitectura relevantes
+
+- **SQLite backbone (no ORM):** velocidad, cero dependencias, migración libre.
+- **Config YAML en `config/`:** el código no hardcodea nada sensible.
+- **Autonomía por defecto `confirm_before_execution`:** nada ejecuta sin
+  confirmación hasta que el usuario decida subir de nivel.
+- **Trading `READ_ONLY` por defecto; `autonomous_trading_enabled: false`.**

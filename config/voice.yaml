@@ -1,0 +1,28 @@
+# ============================================================
+# JAYU_JAR — Configuración de voz (Fase 2)
+# ============================================================
+# Todo el pipeline está DESHABILITADO hasta que se implemente la Fase 2.
+# La prioridad es latencia baja. Se evaluarán:
+#   STT: faster-whisper / whisper.cpp / Whisper / API externa opcional
+#   TTS: Piper (voz femenina local) / Kokoro / ElevenLabs / OpenAI TTS (opcional)
+#   VAD: para permitir interrumpir a JAYU mientras habla.
+
+enabled: false
+
+pipeline:
+  stt:
+    engine: faster-whisper    # | whisper | whisper_cpp | external
+    model: small              # small/base (es-ES bien soportado por faster-whisper)
+    sample_rate: 16000
+  vad:
+    engine: webrtcvad         # para detectar inicio/fin de habla e interrupciones
+    aggressiveness: 2
+  tts:
+    engine: piper             # | kokoro | elevenlabs | openai
+    voice: es_ES-...          # voz femenina concreta (se define al instalar Piper)
+    speed_ratio: 1.15         # respuestas rápidas
+    interruptions: true
+
+behavior:
+  speak_replies: true
+  transcribe_input: true

@@ -1,0 +1,22 @@
+# ============================================================
+# JAYU_JAR — Configuración de trading (planes para Fase MT5)
+# ============================================================
+# La EJECUCIÓN está separada del ANÁLISIS.
+# Por defecto NADA se ejecuta.
+
+mode: READ_ONLY
+# READ_ONLY               -> solo lectura y análisis
+# CONFIRM_BEFORE_EXECUTION-> pedir confirmación en cada orden
+# AUTONOMOUS_TRADING      -> DESACTIVADO POR DEFECTO (requiere override en .env)
+
+autonomous_trading_enabled: false     # NUNCA activar por defecto
+
+risk:
+  max_position_pct_equity: 2.0        # % del capital por posición
+  max_open_positions: 5
+  max_daily_loss_pct: 3.0             # límite de pérdida diaria
+  max_spread_threshold: null          # null = sin límite configurado
+
+mt5:
+  symbol_prefix: ""
+  account_risk_limit_contact: true    # avisar si se supera límite configurado

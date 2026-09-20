@@ -1,0 +1,71 @@
+# ============================================================
+# JAYU_JAR — Catálogo de modelos y reglas de routing
+# ============================================================
+# El router elige proveedor+modelo según la tarea:
+# velocidad, coste, complejidad, privacidad y necesidad de razonamiento.
+
+providers:
+  ollama:
+    enabled: true
+    type: openai_compatible        # Ollama expone API compatible con OpenAI en /v1
+    base_url: http://127.0.0.1:11434/v1
+    api_key_env: null              # Ollama local no usa API key
+    priority: 10                   # menor = preferido primero
+
+  openai_compatible:
+    enabled: false                 # desactivado por defecto
+    type: openai_compatible
+    base_url: http://127.0.0.1:8000/v1
+    api_key_env: OPENAI_COMPATIBLE_API_KEY
+    priority: 20
+
+  openai:
+    enabled: false                 # nube de pago: SOLO si el usuario la activa
+    type: openai
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    priority: 100
+
+models:
+  qwen2.5-coder:14b-instruct-q4_K_M:
+    provider: ollama
+    roles: [default, code, deep]
+    context: 32768
+    cost_tier: local
+    speed: medium
+    reasoner: true
+
+  qwen2.5:7b-instruct-q4_K_M:
+    provider: ollama
+    roles: [fast]
+    context: 32768
+    cost_tier: local
+    speed: fast
+    reasoner: false
+
+  qwen2.5:0.5b:
+    provider: ollama
+    roles: [small, classify]
+    context: 32768
+    cost_tier: local
+    speed: fastest
+    reasoner: false
+
+  nomic-embed-text:
+    provider: ollama
+    roles: [embedding]
+    context: 2048
+    cost_tier: local
+    speed: fast
+    reasoner: false
+
+# ---------- Reglas de routing por tipo de tarea ----------
+# role_to_use: pequeño -> fast -> default -> deep según complejidad.
+routing:
+  classify: small          # intención, etiquetado, preguntas simples
+  chat: fast               # conversación normal
+  code: default            # programación
+  reason: deep             # análisis profundo (usa modelo reasoner)
+  market: deep             # análisis de mercados
+  research: default        # investigación web
+  embedding: embedding

@@ -1,0 +1,76 @@
+# ============================================================
+# JAYU_JAR — Permisos por acción
+# ============================================================
+# Clasificación: SAFE | REVIEW | DANGEROUS
+#  - SAFE:      no requiere confirmación en ningún modo.
+#  - REVIEW:    requiere confirmación en "confirm_before_execution".
+#  - DANGEROUS: requiere confirmación explícita SIEMPRE (salvo negación
+#               global). En read_only nunca se permite.
+#
+# El globulamas específico gana. El fallback global es REVIEW.
+
+actions:
+  # ---------- SAFE ----------
+  "memory.read": SAFE
+  "memory.write": SAFE
+  "config.read": SAFE
+  "system.status": SAFE
+  "system.ping": SAFE
+  "web.search": SAFE
+  "web.read": SAFE
+  "market.read": SAFE          # leer cotizaciones/estructura (sin ejecutar)
+  "model.ping": SAFE
+  "model.list": SAFE
+  "llm.chat": SAFE
+  "llm.query": SAFE
+  "llm.classify": SAFE
+
+  # ---------- REVIEW ----------
+  "config.write": REVIEW
+  "skill.install": REVIEW
+  "skill.enable": REVIEW
+  "code.edit": REVIEW
+  "code.run": REVIEW           # ejecutar código propio en sandbox
+  "package.install": REVIEW
+  "mt5.connect": REVIEW
+  "mt5.place_order": REVIEW    # ejecución manual confirmada
+  "mt5.modify_order": REVIEW
+  "mt5.close_order": REVIEW
+  "computer.launch": REVIEW
+  "computer.keyboard": REVIEW
+  "computer.mouse": REVIEW
+  "voice.config": REVIEW
+
+  # ---------- DANGEROUS ----------
+  "fs.delete": DANGEROUS
+  "fs.overwrite_outside_repo": DANGEROUS
+  "system.shutdown": DANGEROUS
+  "process.kill": DANGEROUS
+  "security.modify": DANGEROUS
+  "credentials.write": DANGEROUS
+  "money.transfer": DANGEROUS
+  "trading.autonomous": DANGEROUS   # trading sin confirmación
+  "network.firewall": DANGEROUS
+  "shell.raw": DANGEROUS
+
+  # globulamas por defecto si no hay regla específica
+  "*": REVIEW
+
+# ---------- Modos globales ----------
+modes:
+  read_only:
+    review: deny           # en lectura pura, nada que requiera revisión se ejecuta
+    dangerous: deny
+  confirm_before_execution:
+    review: ask
+    dangerous: ask
+  autonomous:
+    review: allow
+    dangerous: ask
+
+# ---------- Sandbox por defecto ----------
+# Rutas donde el código ejecutado por JAYU puede escribir.
+sandbox_paths:
+  - data
+  - tests
+  - scripts

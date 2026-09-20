@@ -1,21 +1,30 @@
 # memoria vectorial local
 memory/chroma/
 
+# datos locales (sqlite y derivados)
+data/
+*.db
+*.db-wal
+*.db-shm
+
 # logs
-logs/*.log
-logs/*.jsonl
+logs/
 
 # node / python
 node_modules/
 __pycache__/
 *.pyc
+.pytest_cache/
 .venv/
 venv/
 
 # entorno
 .env
 .env.*
+!.env.example
 
-# so
+# entornos de editor / sistema
 Thumbs.db
 Desktop.ini
+.idea/
+.vscode/
