@@ -242,3 +242,60 @@ class FakeProvider:
 
     def close(self) -> None:
         pass
+
+
+# ----------------------------------------------------------------------
+# Fakes de voz (Fase 2): NEVER tocan micrófono, red ni altavoces.
+# ----------------------------------------------------------------------
+
+class FakeTTS:
+    """TextToSpeech falso: no sintetiza ni reproduce nada real."""
+
+    def __init__(self, *, installed: bool = True, **cfg) -> None:
+        self.installed = installed
+        self.engine = cfg.get("engine", "edge")
+        self.voice = cfg.get("voice", "es-MX-DaliaNeural")
+        self.rate = cfg.get("rate", "+8%")
+        self.pitch = cfg.get("pitch", "-2Hz")
+        self.volume = cfg.get("volume", "+0%")
+        self.spoken: list[str] = []
+
+    def available(self) -> dict:
+        if not self.installed:
+            return {"installed": False, "engine": self.engine,
+                    "voice": self.voice, "reason": "motor falso sin instalar"}
+        return {"installed": True, "engine": self.engine,
+                "voice": self.voice, "voices_available":
+                ["es-ES-ElviraNeural", "es-MX-DaliaNeural"]}
+
+    def speak(self, text: str, **kw) -> dict:
+        if not self.installed:
+            return {"ok": False, "error": "motor falso sin instalar"}
+        self.spoken.append(text)
+        return {"ok": True, "engine": self.engine, "voice": self.voice,
+                "path": "fake/voice.mp3", "player": {"played": False,
+                                                     "reason": "fake"}}
+
+
+class FakeSTT:
+    """SpeechToText falso: devuelve un texto fijo (sin red ni audio)."""
+
+    def __init__(self, *, installed: bool = True, text: str = "hola") -> None:
+        self.installed = installed
+        self.text = text
+        self.calls: list[str] = []
+
+    def available(self) -> dict:
+        if not self.installed:
+            return {"installed": False, "engine": "faster-whisper",
+                    "model": "small",
+                    "reason": "motor falso sin instalar"}
+        return {"installed": True, "engine": "faster-whisper",
+                "model": "small"}
+
+    def transcribe(self, audio_path) -> dict:
+        self.calls.append(str(audio_path))
+        if not self.installed:
+            raise RuntimeError("motor falso sin instalar")
+        return {"ok": True, "text": self.text, "language": "es",
+                "language_probability": 0.99, "model": "small"}

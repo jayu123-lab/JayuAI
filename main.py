@@ -125,9 +125,7 @@ def _handle_command(orchestrator: Orchestrator, line: str,
             ok = orchestrator.store.forget(arg)
             print(f"  {'Olvidado: ' + arg if ok else 'Clave no encontrada'}")
     elif cmd == "/voice":
-        print("  Voz pendiente (Fase 2): faster-whisper + Piper + VAD.")
-        print("  Estado config: enabled="
-              f"{orchestrator.settings.voice_conf.get('enabled', False)}")
+        _cmd_voice(orchestrator, arg)
     elif cmd == "/mt5":
         _cmd_mt5(orchestrator, arg)
     elif cmd == "/clear":
@@ -201,6 +199,30 @@ def _cmd_mt5(orchestrator: Orchestrator, arg: str | None) -> None:
                           f"P/L={p.get('profit')}")
     except MT5Error as exc:
         print(f"  (lectura MT5 no disponible) {exc}")
+
+
+def _cmd_voice(orchestrator: Orchestrator, arg: str | None) -> None:
+    """Estado de voz y comando /voice speak <texto>."""
+    res = orchestrator.run_skill("voice", "status", {}, interactive=False)
+    conf = orchestrator.settings.voice_conf
+    enabled = bool(conf.get("enabled", False))
+    print(f"  Voz habilitada: {enabled}")
+    tts = res.get("tts", {})
+    stt = res.get("stt", {})
+    print(f"  TTS [{tts.get('engine')}] instalado={tts.get('installed')} "
+          f"voz={res.get('current_voice', {}).get('voice') or tts.get('voice')}"
+          + (f"  ({tts.get('reason')})" if not tts.get("installed") else ""))
+    print(f"  STT [{stt.get('engine','-')}] instalado={stt.get('installed')} "
+          f"modelo={stt.get('model')}"
+          + (f"  ({stt.get('reason')})" if not stt.get("installed") else ""))
+    parts = (arg or "").split(None, 1)
+    if parts and parts[0] == "speak" and len(parts) == 2:
+        out = orchestrator.run_skill("voice", "speak",
+                                     {"text": parts[1]}, interactive=False)
+        if out.get("ok"):
+            print(f"  ✔ Dicho: {parts[1]!r}  [{out.get('engine')}]")
+        else:
+            print(f"  ✘ No se pudo hablar: {out.get('error')}")
 
 
 def _render(result) -> str:

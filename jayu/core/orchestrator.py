@@ -30,10 +30,12 @@ from ..skills.builtin import memory as memory_skill_module
 from ..skills.builtin import mt5 as mt5_skill_module
 from ..skills.builtin import market as market_skill_module
 from ..skills.builtin import multiagent as multiagent_skill_module
+from ..skills.builtin import voice as voice_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.builtin.web import register as register_web
-from ..skills.builtin.voice import register as register_voice
 from ..skills.registry import SkillRegistry
+from ..voice.stt import SpeechToText
+from ..voice.tts import TextToSpeech
 from .intent import classify_intent
 from .persona import answer_with_context, build_system_prompt
 
@@ -94,6 +96,21 @@ class Orchestrator:
         self.mt5_sizer = PositionSizer(self.mt5_connector,
                                        self.settings.trading_conf)
         self.trading_mode = self.mt5_executor.mode
+        # --- Voz (Fase 2): TTS + STT desde voice.yaml (lazy, no bloquea) ---
+        vconf = self.settings.voice_conf or {}
+        tts_cfg = vconf.get("tts", {}) or {}
+        stt_cfg = vconf.get("stt", {}) or {}
+        self.tts = TextToSpeech(
+            engine=tts_cfg.get("engine", "edge"),
+            voice=tts_cfg.get("voice", "es-MX-DaliaNeural"),
+            rate=tts_cfg.get("rate", "+8%"),
+            pitch=tts_cfg.get("pitch", "-2Hz"),
+        )
+        self.stt = SpeechToText(
+            model=stt_cfg.get("model", "small"),
+            device=stt_cfg.get("device", "cpu"),
+            compute_type=stt_cfg.get("compute_type", "int8"),
+        )
         self._register_skills()
         logger.info(
             "orquestador inicializado db_path=%s providers=%s mt5=%s "
@@ -110,7 +127,9 @@ class Orchestrator:
     def _register_skills(self) -> None:
         register_system(self.registry)
         register_web(self.registry)
-        register_voice(self.registry)
+        voice_skill = voice_skill_module.make_voice_skill(
+            lambda: self.tts, lambda: self.stt)
+        self.registry.register(voice_skill)
         memory_skill = memory_skill_module.make_store(lambda: self.store)
         self.registry.register(memory_skill)
         market_skill = market_skill_module.make_market_skill(

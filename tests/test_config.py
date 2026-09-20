@@ -14,7 +14,7 @@ def test_project_root_exists():
 
 
 def test_load_settings_has_expected_keys(tmp_settings):
-    assert tmp_settings.config.get("name") == "JAYU_JAR"
+    assert tmp_settings.config.get("name") == "JayuAI"
     assert tmp_settings.config.get("autonomy_level") == "confirm_before_execution"
     assert "providers" in tmp_settings.models_conf
     assert "actions" in tmp_settings.permissions_conf

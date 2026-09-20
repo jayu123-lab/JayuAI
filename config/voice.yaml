@@ -1,28 +1,32 @@
 # ============================================================
-# JAYU_JAR — Configuración de voz (Fase 2)
+# JayuAI — Configuración de voz (FASE 2 implementada)
 # ============================================================
-# Todo el pipeline está DESHABILITADO hasta que se implemente la Fase 2.
-# La prioridad es latencia baja. Se evaluarán:
-#   STT: faster-whisper / whisper.cpp / Whisper / API externa opcional
-#   TTS: Piper (voz femenina local) / Kokoro / ElevenLabs / OpenAI TTS (opcional)
-#   VAD: para permitir interrumpir a JAYU mientras habla.
+# Pipeline: micrófono -> [VAD] -> faster-whisper (STT local)
+#           -> orquestador -> edge-tts (TTS neuronal NATURAL, no robótico)
+#           -> altavoz
+# Los motores se cargan con import perezoso: si falta una dependencia, la
+# skill responde ok=False con el motivo exacto (nunca simula).
 
-enabled: false
+enabled: true
 
 pipeline:
   stt:
-    engine: faster-whisper    # | whisper | whisper_cpp | external
-    model: small              # small/base (es-ES bien soportado por faster-whisper)
+    engine: faster-whisper    # local; descarga del modelo la 1ª vez (HF)
+    model: small              # small/base — es-ES bien soportado en CPU
+    device: cpu
+    compute_type: int8
     sample_rate: 16000
   vad:
-    engine: webrtcvad         # para detectar inicio/fin de habla e interrupciones
-    aggressiveness: 2
+    engine: energy            # VAD por energía (numpy puro, sin deps)
+    threshold_db: -35
   tts:
-    engine: piper             # | kokoro | elevenlabs | openai
-    voice: es_ES-...          # voz femenina concreta (se define al instalar Piper)
-    speed_ratio: 1.15         # respuestas rápidas
+    engine: edge              # edge = neuronal natural | piper = 100% local
+    voice: es-MX-DaliaNeural  # voz femenina cálida y fluida
+    rate: "+8%"               # respuestas ágiles (no monótonas)
+    pitch: "-2Hz"             # tono algo más grave y cálido (no robótico)
+    volume: "+0%"
     interruptions: true
 
 behavior:
-  speak_replies: true
-  transcribe_input: true
+  speak_replies: true         # la UI reproduce las respuestas en voz alta
+  transcribe_input: true      # el chat acepta entrada por micrófono

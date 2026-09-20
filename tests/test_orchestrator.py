@@ -86,7 +86,7 @@ def test_status_contains_layers(tmp_settings, fake_providers):
     orch = _orch(tmp_settings, fake_providers)
     try:
         st = orch.status()
-        assert st["name"] == "JAYU_JAR"
+        assert st["name"] == "JayuAI"
         assert "ollama" in st["providers"]
         assert any(s["name"] == "market_intelligence" for s in st["skills"])
     finally:

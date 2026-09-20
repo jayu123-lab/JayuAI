@@ -31,6 +31,12 @@ actions:
   "llm.query": SAFE
   "llm.classify": SAFE
 
+  # ---------- Voz (Fase 2): local, escucha al usuario localmente ----------
+  "voice.status": SAFE
+  "voice.speak": SAFE         # sintetizar y reproducir (local)
+  "voice.stt": SAFE           # transcribir audio local
+  "voice.listen": SAFE        # grabar del micrófono (local)
+
   # ---------- MT5: LECTURA (análisis) SIEMPRE permitida ----------
   "mt5.status": SAFE
   "mt5.account": SAFE
@@ -64,7 +70,7 @@ actions:
   "computer.launch": REVIEW
   "computer.keyboard": REVIEW
   "computer.mouse": REVIEW
-  "voice.config": REVIEW
+  "voice.config": REVIEW      # cambiar voz/tono/motor de TTS
 
   # ---------- DANGEROUS ----------
   "fs.delete": DANGEROUS
