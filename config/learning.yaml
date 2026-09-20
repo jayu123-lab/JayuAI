@@ -1,0 +1,15 @@
+# ============================================================
+# JayuAI — Aprendizaje gradual (FASE 9)
+# ============================================================
+# Convierte conversaciones útiles en dataset de entrenamiento local.
+# Nada se sube a la nube; el fine-tuning real queda documentado en
+# data/learning/COMO_ENTRENAR.md (hardware local limitado por ahora).
+
+learning:
+  enabled: true
+  auto_capture: true        # el orquestador guarda ejemplos tras responder
+  db_file: learning.db      # dentro de data_dir
+  max_examples: 20000
+  min_reply_chars: 40       # respuestas más cortas se descartan como ruido
+  dataset_dir: learning/fine_tune   # relativo a data_dir
+  export_limit: 5000

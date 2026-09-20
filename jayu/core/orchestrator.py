@@ -11,6 +11,7 @@ from __future__ import annotations
 import inspect
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from threading import RLock
 from typing import Any, Callable
 
@@ -36,6 +37,7 @@ from ..skills.builtin import voice as voice_skill_module
 from ..skills.builtin import web as web_skill_module
 from ..skills.builtin import gold as gold_skill_module
 from ..skills.builtin import vision as vision_skill_module
+from ..skills.builtin import learning as learning_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.registry import SkillRegistry
 from ..voice.stt import SpeechToText
@@ -100,6 +102,7 @@ class Orchestrator:
         self.mt5_sizer = PositionSizer(self.mt5_connector,
                                        self.settings.trading_conf)
         self.trading_mode = self.mt5_executor.mode
+        self._last_prompt = ""
         # --- Voz (Fase 2): TTS + STT desde voice.yaml (lazy, no bloquea) ---
         vconf = self.settings.voice_conf or {}
         tts_cfg = vconf.get("tts", {}) or {}
@@ -127,6 +130,20 @@ class Orchestrator:
             timeout=float((rconf.get("fetch", {}) or {}).get("timeout", 20)),
             max_chars=int((rconf.get("fetch", {}) or {}).get("max_chars", 12000)),
         )
+        # --- Aprendizaje gradual (Fase 9): dataset local, nada a la nube ---
+        self.learning_store = None
+        try:
+            lconf = self.settings.learning_conf or {}
+            lsec = lconf.get("learning", {}) or {}
+            if lsec.get("enabled", True):
+                from ..learning.store import LearningStore
+                ldb = lsec.get("db_file", "learning.db")
+                p = Path(str(ldb))
+                self.learning_store = LearningStore(
+                    p if p.is_absolute() else self.settings.data_dir / ldb,
+                    max_examples=int(lsec.get("max_examples", 20000)))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("learning store no inicializado: %s", exc)
         self._register_skills()
         logger.info(
             "orquestador inicializado db_path=%s providers=%s mt5=%s "
@@ -143,6 +160,8 @@ class Orchestrator:
     def _register_skills(self) -> None:
         register_system(self.registry)
         self.registry.register(vision_skill_module.make_vision_skill())
+        self.registry.register(learning_skill_module.make_learning_skill(
+            lambda: self.learning_store))
         web_skill = web_skill_module.make_web_skill(
             lambda: self.research_search,
             lambda: self.research_fetcher,
@@ -260,6 +279,7 @@ class Orchestrator:
     def _chat(self, text: str, *, session_id: str, interactive: bool,
               user_ok: bool) -> ChatResult:
         text = text.strip()
+        self._last_prompt = text
         intent = classify_intent(text)
         self.store.add_short_term(session_id, "user", text)
 
@@ -511,6 +531,8 @@ class Orchestrator:
                   *, mode: str, provider: str, model: str,
                   memory_ctx: list[str], user_ok: bool) -> ChatResult:
         self.store.add_short_term(session_id, "assistant", reply)
+        self._maybe_capture_example(reply, session_id, intent, mode,
+                                    provider, model)
         return ChatResult(
             text=reply, intent=intent.name, complexity=intent.complexity,
             provider=provider, model=model, mode=mode,
@@ -519,7 +541,44 @@ class Orchestrator:
                   "user_ok": user_ok},
         )
 
+    # ------------------------------------------------------------------
+    def _maybe_capture_example(self, reply: str, session_id: str, intent,
+                               mode: str, provider: str,
+                               model: str) -> None:
+        """Fase 9: guarda un ejemplo (prompt → reply) para el dataset local.
+
+        Usa el etiquetado automático y la política del orquestador (solo
+        si está habilitado). Nunca bloquea ni altera la respuesta.
+        """
+        if self.learning_store is None:
+            return
+        try:
+            lconf = self.settings.learning_conf or {}
+            lsec = lconf.get("learning", {}) or {}
+            if not lsec.get("auto_capture", True):
+                return
+            if not getattr(self, "_last_prompt", ""):
+                return
+            prompt = self._last_prompt
+            ok_mode = mode not in ("offline", "blocked", "degraded")
+            from ..learning.labeller import classify, usefulness
+            useful, reason = usefulness(
+                reply=reply, mode=mode, ok=ok_mode,
+                min_reply_chars=int(lsec.get("min_reply_chars", 40)))
+            category = classify(prompt, intent.name)
+            self.learning_store.add_example(
+                prompt=prompt, reply=reply, session_id=session_id,
+                intent=intent.name, category=category, mode=mode,
+                useful=int(useful), useful_reason=reason)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("captura de ejemplo falló: %s", exc)
+
     def close(self) -> None:
         self.mt5_connector.shutdown()
         self.router.close()
         self.db.close()
+        if self.learning_store is not None:
+            try:
+                self.learning_store.close()
+            except Exception:  # noqa: BLE001
+                pass

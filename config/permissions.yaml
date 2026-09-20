@@ -53,6 +53,12 @@ actions:
   "vision.capture_read": SAFE     # screenshot + OCR combinados
   "vision.locate": SAFE           # coordenadas de un patrón (solo lectura)
 
+  # ---------- Aprendizaje (Fase 9): dataset local, NUNCA sale de la máquina ----------
+  "learning.status": SAFE         # estado del dataset
+  "learning.stats": SAFE          # recuentos por categoría/utilidad
+  "learning.capture": SAFE        # marcar ejemplos como útiles (local)
+  "learning.export": SAFE         # exportar JSONL de fine-tuning a disco local
+
   # ---------- MT5: LECTURA (análisis) SIEMPRE permitida ----------
   "mt5.status": SAFE
   "mt5.account": SAFE
