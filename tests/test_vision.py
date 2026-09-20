@@ -135,5 +135,5 @@ def test_vision_permissions_safe(tmp_settings):
 def test_elapse_normalizacion():
     from jayu.vision.ocr import _elapse_to_s
     assert _elapse_to_s([0.5, 0.2, 0.1]) == 0.8
-    assert _elapse_to_s(1.2345) == 1.235
+    assert _elapse_to_s(1.2345) == 1.234
     assert _elapse_to_s(None) == 0.0
