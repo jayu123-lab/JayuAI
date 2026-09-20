@@ -327,6 +327,19 @@ class FakeTTS:
                 "path": "fake/voice.mp3", "player": {"played": False,
                                                      "reason": "fake"}}
 
+    def synthesize(self, text: str, out_path: str | None = None, **kw) -> dict:
+        """Genera (falso) el audio de `text` y escribe un archivo señuelo."""
+        if not self.installed:
+            return {"ok": False, "error": "motor falso sin instalar"}
+        self.spoken.append(text)
+        if out_path is not None:
+            import os
+            os.makedirs(os.path.dirname(str(out_path)) or ".", exist_ok=True)
+            with open(out_path, "wb") as fh:
+                fh.write(b"ID3\x00\x00fake-audio-jayuai")
+        return {"ok": True, "engine": self.engine, "voice": self.voice,
+                "path": str(out_path) if out_path else "fake/voice.mp3"}
+
 
 class FakeSTT:
     """SpeechToText falso: devuelve un texto fijo (sin red ni audio)."""

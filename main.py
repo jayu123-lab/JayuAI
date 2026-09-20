@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""JAYU_JAR — terminal interactivo (Fase 1).
+"""JayuAI — terminal interactivo y servidor web local.
 
 Uso:
     python main.py                  -> REPL interactivo
     python main.py --once "texto"   -> procesa un único mensaje y sale
     python main.py --status         -> estado del sistema y salida
+    python main.py --web [--port 8765]  -> interfaz moderna (Fase 10): chat,
+                                     cerebro hablante, PWA / escritorio
 
 Comandos dentro del REPL:
     /help        ayuda
@@ -36,6 +38,8 @@ for _stream in (sys.stdout, sys.stderr):
         pass
 
 from jayu.core.orchestrator import Orchestrator  # noqa: E402
+
+DEFAULT_WEB_PORT = 8765
 
 BANNER = r"""
     ██╗ █████╗ ██╗   ██╗██╗   ██╗    ██╗ █████╗ ██████╗
@@ -274,6 +278,16 @@ def main(argv: list[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     orchestrator = Orchestrator(confirmer=_yes_no)
     try:
+        if "--web" in argv:
+            # FASE 10: interfaz moderna + cerebro hablante (PWA/escritorio)
+            from jayu.web.server import run_server
+            port = DEFAULT_WEB_PORT
+            for i, a in enumerate(argv):
+                if a == "--port" and i + 1 < len(argv):
+                    port = int(argv[i + 1])
+            print(f"  JayuAI web: http://127.0.0.1:{port}  (Ctrl+C para salir)")
+            run_server(orchestrator, port=port, open_browser=True, block=True)
+            return 0
         if "--status" in argv:
             import json as _json
             print(_json.dumps(orchestrator.status(), indent=2,

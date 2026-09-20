@@ -5,7 +5,7 @@
 # variables de entorno locales (ver .env.example) y nunca en el repo.
 
 name: JayuAI
-version: 0.5.0
+version: 0.7.0
 language: es          # idioma por defecto de las respuestas
 timezone: Europe/Madrid
 

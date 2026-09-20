@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="description" content="JayuAI — asistente local experto en oro (XAUUSD), macro, DXY, bonos y mercados. Cerebro hablante." />
+  <title>JayuAI · Cerebro</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/static/icons/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="brand-orb"></div>
+        <div class="brand-text">
+          <h1>Jayu<span>AI</span></h1>
+          <p class="tagline">cerebro local · experto en oro</p>
+        </div>
+      </div>
+
+      <section class="panel">
+        <h2 class="panel-title">Estado</h2>
+        <div id="estado" class="kv">
+          <div class="kv-row"><span>Modelo</span><b id="est-modelo">—</b></div>
+          <div class="kv-row"><span>Proveedor</span><b id="est-proveedor">—</b></div>
+          <div class="kv-row"><span>Autonomía</span><b id="est-autonomia">—</b></div>
+          <div class="kv-row"><span>MT5</span><b id="est-mt5">—</b></div>
+          <div class="kv-row"><span>Trading</span><b id="est-trading">—</b></div>
+          <div class="kv-row"><span>Voz TTS</span><b id="est-tts">—</b></div>
+          <div class="kv-row"><span>STT</span><b id="est-stt">—</b></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Oro en vivo <span class="pulse-dot"></span></h2>
+        <div class="kv">
+          <div class="kv-row"><span>XAUUSD</span><b id="oro-precio">—</b></div>
+          <div class="kv-row"><span>Tendencia</span><b id="oro-trend">—</b></div>
+          <div class="kv-row"><span>DXY</span><b id="oro-dxy">—</b></div>
+          <div class="kv-row"><span>Oro/Plata</span><b id="oro-ratio">—</b></div>
+          <div class="kv-row"><span>Estructura</span><b id="oro-estructura">—</b></div>
+        </div>
+        <div id="oro-calendar" class="calendar-block"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Habilidades <span id="n-skills" class="badge">0</span></h2>
+        <ul id="skills" class="skill-list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Memoria</h2>
+        <ul id="memoria" class="mem-list"></ul>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Aprendizaje</h2>
+        <div id="aprendizaje" class="kv">
+          <div class="kv-row"><span>Ejemplos</span><b id="ap-total">—</b></div>
+          <div class="kv-row"><span>Útiles</span><b id="ap-utiles">—</b></div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ===================== MAIN ===================== -->
+    <main class="main">
+      <header class="topbar glass">
+        <div class="topbar-left">
+          <span class="status-led" id="led"></span>
+          <span id="topbar-text">Conectando…</span>
+        </div>
+        <div class="topbar-right">
+          <label class="toggle">
+            <input type="checkbox" id="toggle-voz" checked />
+            <span class="slider"></span>
+            <span>Voz</span>
+          </label>
+          <button id="btn-instalar" class="btn-mini" hidden>Instalar</button>
+        </div>
+      </header>
+
+      <!-- ============ CEREBRO HABLANTE ============ -->
+      <section class="brain-zone">
+        <div class="brain-stage" id="brain-stage">
+          <canvas id="brain" width="460" height="460"></canvas>
+          <div class="brain-halo"></div>
+          <div class="brain-core"></div>
+          <div class="brain-label" id="brain-label">escuchando…</div>
+          <div class="brain-mic" id="btn-mic" title="Hablar con JayuAI">
+            <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          </div>
+          <div class="pulse-ring" id="pulse-ring"></div>
+        </div>
+      </section>
+
+      <!-- ============ CHAT ============ -->
+      <section class="chat-panel glass">
+        <div class="chat-log" id="chat-log"></div>
+        <form class="chat-input" id="chat-form" autocomplete="off">
+          <input id="chat-text" placeholder="Pregúntale a JayuAI sobre el oro, macro, mercados…"
+                 autofocus />
+          <button type="submit" class="btn-send" id="btn-send">Enviar</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

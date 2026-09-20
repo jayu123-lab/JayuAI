@@ -22,7 +22,11 @@ class LearningStore:
         self.db_path = Path(db_path)
         self.max_examples = max_examples
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.db_path))
+        # check_same_thread=False: el servidor web (Fase 10) usa la misma
+        # conexión desde hilos de request de ThreadingHTTPServer.
+        self._conn = sqlite3.connect(str(self.db_path),
+                                     check_same_thread=False)
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute(
             """CREATE TABLE IF NOT EXISTS examples (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

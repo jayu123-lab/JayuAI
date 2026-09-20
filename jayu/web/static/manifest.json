@@ -1,0 +1,14 @@
+{
+  "name": "JayuAI — Cerebro local",
+  "short_name": "JayuAI",
+  "description": "Asistente local experto en XAUUSD y el oro: técnica, macro, fundamental y voz. Cerebro hablante.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "lang": "es",
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

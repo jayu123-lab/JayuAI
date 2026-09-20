@@ -1,6 +1,76 @@
 # CHANGELOG
 
-Todas las decisiones y cambios relevantes de JAYU_JAR.
+Todas las decisiones y cambios relevantes de JayuAI (antes JAYU_JAR).
+
+## [0.7.0] — 2026-09-20 — FASE 10: interfaz moderna + cerebro hablante (PWA/escritorio)
+
+### Añadido
+- **Servidor web local** (`jayu/web/server.py`, stdlib, `python main.py --web
+  [--port N]`): API JSON en 127.0.0.1 con chat real (LLM local vía router),
+  síntesis de voz (`/api/speak` → MP3 con edge-tts), transcripción de
+  micrófono (`/api/listen`), panel oro en vivo (`/api/markets/gold`), gobernador
+  multi-agente solo análisis (`/api/markets/governor`), visión
+  (`/api/vision/read`), aprendizaje, memoria y estado. NUNCA expone ejecución
+  de trading.
+- **"Cerebro hablante"**: avatar de partículas doradas en canvas que **vibra
+  con el audio real de la voz** (Web Audio Analyser) — la LLM local es el
+  motor principal del cerebro. Chat con auto-voz, botón de micrófono (STT
+  local faster-whisper), label de estados (escuchando/pensando/hablando).
+- **Panel PWA + escritorio**: `manifest.json`, service worker con caché de
+  estáticos, botón "Instalar", tema dark glassmorphism con acentos de oro;
+  iconos 192/512 generados por `scripts/gen_icons.py` (Pillow).
+- **Tests** — 12 nuevos de web (servidor local con fakes: sirve HTML/estáticos,
+  status, chat, speak con audio señuelo, oro, governor solo análisis, visión
+  honesta sin pantalla, aprendizaje/memoria, 404). Fix: sqlite
+  `check_same_thread=False` para el hilo del servidor. Total **190 pasan**.
+
+## [0.6.0] — 2026-09-20 — FASE 9: entrenar la LLM poco a poco (local)
+
+### Añadido
+- **`jayu/learning/` — recolección → etiquetado → export de un dataset local**:
+  - `store.py` — `LearningStore` (SQLite): ejemplos prompt→reply con intención,
+    categoría, skills usadas y utilidad; dedup y capacidad máxima.
+  - `labeller.py` — etiquetado heurístico transparente: categorías
+    gold_market/voice/vision/system/general; "útil" = respuesta de un
+    modelo/tool real, sin errores, con longitud y skills (nunca ruido).
+  - `dataset.py` — export JSONL estilo fine-tuning (messages system/user/
+    assistant) + guía `COMO_ENTRENAR.md` (adapter LoRA vía Ollama/llama.cpp).
+- **Captura automática** en el orquestador tras cada respuesta (configurable
+  en `config/learning.yaml`). Los modos offline/blocked/degraded se descartan
+  como ruido (honestidad: no contaminar el dataset).
+- **Skill `learning`** (status/stats/capture/export, permisos learning.* SAFE;
+  nada sale de la máquina).
+- **Tests** — 11 nuevos (store, etiquetado, export, skill, captura automática
+  por orquestador). Total 167 → 178.
+
+## [0.5.1] — 2026-09-20 — FASE 8 ampliada: especialistas macro + sentimiento + votación ponderada
+- **MacroAnalyst**: contexto macro (FED, tasas reales, DXY, bonos, inflación,
+  bancos centrales) + señales en vivo DXY/US10Y si el broker las ofrece
+  (desviación normalizada capada ±3); sin datos → voto NEUTRAL ok=True con
+  `data_status: pendiente` (nunca adivina).
+- **SentimentAnalyst**: léxico oro-específico sobre titulares (+100..−100).
+- **MarketGovernor**: coalición ponderada (técnica 1.0 / macro 0.4 /
+  sentimiento 0.25, configurable); la coalición puede dominar la dirección
+  técnica; `ok` solo depende de researcher+risk_manager; `decision.votes` con
+  votos de los tres especialistas; umbral de coalición real (`self.threshold`).
+- **Multiagent skill v0.2.0**: construye analistas con kb_fn=gold_context+quotes
+  y run acepta `macro_context`/`headlines`. Fix del bug de contexto inyectado
+  sin clave `ok`. 167 tests.
+
+## [0.4.1] — 2026-09-20 — FASE 7: visión local
+- **`jayu/vision/`**: captura multi-monitor con mss, OCR local RapidOCR
+  (`_elapse_to_s` maneja lista/None), localización OpenCV con NMS y guarda
+  anti-NaN (bug de índices filas/columnas corregido por tests).
+- **Skill `vision`** (capture/ocr/capture_read/locate, permisos vision.* SAFE).
+
+## [0.4.0] — 2026-09-20 — FASE 3: web research + especialista oro
+- **`jayu/research/`**: búsqueda `ddgs` (DuckDuckGo nuevo; el shim 8.1.1 daba
+  resultados basura y RuntimeWarning) con fallback SearXNG; lectura con
+  httpx+BeautifulSoup; resumen con LLM local (Ollama) y degradación extractiva
+  sin modelo.
+- **`jayu/kb/gold.py`** + skill `gold_analyst`: drivers en vivo (XAUUSD, XAGUSD,
+  DXY, US10Y), niveles y calendario macro; si el broker no ofrece un dato →
+  "pendiente" honesto. 160 tests.
 
 ## [0.5.0] — 2026-09-20 — FASE 8: motor multiagente de mercado
 
