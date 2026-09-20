@@ -2,6 +2,55 @@
 
 Todas las decisiones y cambios relevantes de JAYU_JAR.
 
+## [0.3.0] — 2026-09-20 — FASE 6: integración MT5 (análisis + ejecución protegida)
+
+### Añadido
+- **`jayu/mt5/` — integración con MetaTrader 5**:
+  - `connector.py` (`MT5Connector`) — capa de LECTURA/ANÁLISIS: cuenta,
+    posiciones, órdenes pendientes, símbolos, quote (bid/ask/spread), OHLC por
+    timeframe, ticks, historial de deals/órdenes. Validada contra el terminal
+    MT5 real (FTMO, 168 símbolos, XAUUSD en vivo).
+  - `risk.py` (`PositionSizer`) — cálculo de lote por riesgo % del equity,
+    respetando volume_min/max/step del broker y límites de `trading.yaml`
+    (nunca ejecuta).
+  - `execution.py` (`MT5Executor`) — capa de EJECUCIÓN: market/pending orders,
+    modificar SL/TP, cierre, cierre total, break-even, trailing. TODA
+    ejecución pasa por: modo de trading + política de permisos + confirmación
+    humana + `audit_log` (en READ_ONLY nunca ejecuta).
+- **`TradeMode`** `READ_ONLY / CONFIRM_BEFORE_EXECUTION / AUTONOMOUS_TRADING`.
+  `AUTONOMOUS_TRADING` SOLO se honra si `autonomous_trading_enabled: true`
+  (por defecto `false`); si no, se degrada a CONFIRM.
+- **Skill `mt5`** — tools de lectura (SAFE): `status account positions orders
+  symbols quote rates ticks history sizer`; tools de ejecución (REVIEW /
+  DANGEROUS): `market_order pending_order modify_position modify_pending
+  close_position close_all breakeven trailing`.
+- **Perfiles de permiso** en `permissions.yaml`: lectura MT5 SAFE; ejecución
+  REVIEW; `mt5.close_all` DANGEROUS.
+- **`trading.yaml`** — sección `execution:` (magic, deviation, comentario,
+  breakeven/trailing habilitables).
+- **Terminal**: comando `/mt5` (estado, cuenta, posiciones, órdenes, símbolos;
+  SOLO lectura).
+- **Tests** — 27 nuevos (connector, risk, executor con `FakeMT5`, integración
+  por orquestador). Total 87 pasan.
+
+### Corregido
+- `Orchestrator.run_skill`: `log_with_policy` resolvía ASK→DENY y las
+  confirmaciones humanas de skills REVIEW nunca se pedían. Ahora evalúa la
+  política, resuelve la confirmación y registra el veredicto final.
+- `MT5Executor._authorize`: mismo patrón (veredicto crudo → confirmación) para
+  no perder el flujo interactivo.
+- `MT5Executor.close_all`/`trailing`: las sub-acciones internas heredan la
+  autorización ya concedida (no vuelven a exigir confirmación).
+- `PositionSizer._result`: claves duplicadas (equity/risk_amount) eliminadas.
+
+### Decisiones de arquitectura
+- Separación estricta ANÁLISIS (connector/sizer) vs EJECUCIÓN (executor):
+  la única vía de operar pasa por política + confirmación + auditoría.
+- Defensa en capas: aunque la política permita, `mode: READ_ONLY` (por defecto)
+  bloquea cualquier ejecución.
+- Testabilidad: `MT5Connector`/`MT5Executor` aceptan un módulo MT5 inyectable
+  (`FakeMT5` en tests) — los tests NUNCA tocan el terminal real.
+
 ## [0.2.0] — 2026-09-20 — FASE 1: core, modelos, memoria y terminal
 
 ### Añadido

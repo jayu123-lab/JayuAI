@@ -37,7 +37,7 @@ modular hacia voz, web, mercados, MT5 y control de PC.
 python -m pytest tests -q
 ```
 
-## Lo que ya funciona (FASE 1)
+## Lo que ya funciona (FASE 1 + FASE 6 MT5)
 
 - **Núcleo orquestador**: intención → plan → router de modelos → ejecución →
   validación → memoria → respuesta (trazable).
@@ -47,9 +47,13 @@ python -m pytest tests -q
   honestidad si el modelo ideal no está instalado.
 - **Permisos** SAFE / REVIEW / DANGEROUS con modos de autonomía
   (`confirm_before_execution` por defecto) y auditoría de todo.
-- **Skills extensibles**: `system` y `memory` funcionales; `web_research`,
-  `market_intelligence`, `voice` registradas y honestas (devuelven
-  `ok=False` + fase pendiente, sin inventar resultados).
+- **Skills extensibles**: `system`, `memory` y `mt5` funcionales;
+  `web_research`, `market_intelligence`, `voice` registradas y honestas
+  (devuelven `ok=False` + fase pendiente, sin inventar resultados).
+- **MT5 (Solo cuando tu terminal está abierto)**: lectura real de
+  cuenta/posiciones/OHLC/cotizaciones y sugerencia de lote por riesgo
+  (`/mt5`, skill `mt5`). La EJECUCIÓN va por `MT5Executor`: modo de trading
+  (READ_ONLY por defecto) + política + confirmación humana + auditoría.
 - **Configuración centralizada** en `config/*.yaml`, secretos solo en entorno
   (`.env.example`).
 

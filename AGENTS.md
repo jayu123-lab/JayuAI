@@ -31,7 +31,9 @@ aprenda algo que deba persistir siempre (reglas, convenciones, decisiones).
   (ChromaDB) en `memory/chroma/` pendiente.
 - Internet: SearXNG autoalojado (sin API keys) + Playwright — FASE 3.
 - Control de PC: pywinauto + PyAutoGUI — FASE 4.
-- Mercados: `market_intelligence` — FASE 5. MT5: `mt5_connector` — FASE 6.
+- Mercados: `market_intelligence` — FASE 5. MT5: `mt5_connector` — FASE 6
+  IMPLEMENTADA (`jayu/mt5/`, skill `mt5`). Lectura de cuenta/posiciones/OHLC
+  en vivo; ejecución SOLO con modo de trading + política + confirmación.
 
 ## Arquitectura de agentes
 
@@ -52,11 +54,11 @@ aprenda algo que deba persistir siempre (reglas, convenciones, decisiones).
 ## Estado de fases
 
 - [x] FASE 1 — Core + modelos + memoria + terminal (v0.2.0, 38 tests)
+- [x] FASE 6 — MT5 (READ_ONLY → CONFIRM → AUTONOMOUS off) (v0.3.0, 87 tests)
 - [ ] FASE 2 — Voz (faster-whisper + Piper + VAD)
 - [ ] FASE 3 — Internet (SearXNG + Playwright)
 - [ ] FASE 4 — Control de PC (Windows)
 - [ ] FASE 5 — Market intelligence
-- [ ] FASE 6 — MT5 (READ_ONLY → CONFIRM → AUTONOMOUS off)
 - [ ] FASE 7 — Visión
 - [ ] FASE 8 — Multiagente de mercado
 - [ ] FASE 9 — Autoprogramación con gate humano

@@ -93,21 +93,33 @@ módulo. El backend vectorial (ChromaDB) se activará cuando esté instalado.
 - Modos `read_only / confirm_before_execution / autonomous`.
 - Toda decisión se escribe en `audit_log` antes y después de ejecutar.
 
+### `jayu/mt5/` — integración MetaTrader 5 (Fase 6)
+- `connector.py` → `MT5Connector` (lectura/ANÁLISIS): cuenta, posiciones,
+  órdenes, símbolos, quote, OHLC, ticks, historial.
+- `risk.py` → `PositionSizer` (sugerencia de lote por riesgo, no ejecuta).
+- `execution.py` → `MT5Executor` (EJECUCIÓN): market/pending, SL/TP, cierre,
+  cierre total, break-even, trailing. Modos `READ_ONLY / CONFIRM /
+  AUTONOMOUS_TRADING` (este último exige `autonomous_trading_enabled: true`).
+- Toda ejecución pasa por política (REVIEW/DANGEROUS) + confirmación humana +
+  `audit_log`. En `READ_ONLY` no se ejecuta nada.
+
 ### `jayu/skills/` — capacidades extensibles
 Cada skill registra nombre, descripción, categoría, herramientas y acciones
-de permiso. Skills actuales: `system`, `memory` (funcionales), `web_research`
-y `market_intelligence` (registradas, devuelven `ok=False` hasta su fase),
-`voice` (Fase 2).
+de permiso (por tool vía `tool_actions`). Skills actuales:
+- `system`, `memory` (funcionales),
+- `mt5` (Fase 6): lectura SAFE + ejecución gateada,
+- `web_research` y `market_intelligence` (registradas, devuelven `ok=False`
+  hasta su fase), `voice` (Fase 2).
 
 ### `main.py` — terminal
-REPL con comandos `/status /models /skills /memory /audit /forget /voice
+REPL con comandos `/status /models /skills /memory /audit /forget /mt5 /voice
 /clear /exit` y modo `--once "mensaje"` para automatización.
 
 ## Fases (ROADMAP en `ROADMAP.md`)
 
 1. ✅ Core + modelos + memoria + terminal
 2. [ ] Voz       3. [ ] Web      4. [ ] PC       5. [ ] Mercados
-6. [ ] MT5       7. [ ] Visión    8. [ ] Multiagente   9. [ ] Self-improvement
+6. ✅ MT5       7. [ ] Visión    8. [ ] Multiagente   9. [ ] Self-improvement
 10. [ ] UI       11. [ ] Optimización     12. [ ] Testing exhaustivo
 
 ## Decisiones de arquitectura relevantes

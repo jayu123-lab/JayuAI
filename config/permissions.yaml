@@ -25,6 +25,19 @@ actions:
   "llm.query": SAFE
   "llm.classify": SAFE
 
+  # ---------- MT5: LECTURA (análisis) SIEMPRE permitida ----------
+  "mt5.status": SAFE
+  "mt5.account": SAFE
+  "mt5.positions_read": SAFE
+  "mt5.orders_read": SAFE
+  "mt5.symbols": SAFE
+  "mt5.quote": SAFE
+  "mt5.rates": SAFE
+  "mt5.ticks": SAFE
+  "mt5.history": SAFE
+  "mt5.sizer": SAFE
+  "mt5.connect": SAFE          # conectar solo lee (el terminal no opera)
+
   # ---------- REVIEW ----------
   "config.write": REVIEW
   "skill.install": REVIEW
@@ -32,10 +45,16 @@ actions:
   "code.edit": REVIEW
   "code.run": REVIEW           # ejecutar código propio en sandbox
   "package.install": REVIEW
-  "mt5.connect": REVIEW
-  "mt5.place_order": REVIEW    # ejecución manual confirmada
-  "mt5.modify_order": REVIEW
-  "mt5.close_order": REVIEW
+
+  # ---------- MT5: EJECUCIÓN (siempre confirmada) ----------
+  "mt5.market_order": REVIEW   # abrir orden de mercado
+  "mt5.pending_order": REVIEW  # abrir orden pendiente
+  "mt5.modify_position": REVIEW
+  "mt5.modify_order": REVIEW   # modificar pendiente (SL/TP/precio)
+  "mt5.close_position": REVIEW
+  "mt5.breakeven": REVIEW
+  "mt5.trailing": REVIEW
+
   "computer.launch": REVIEW
   "computer.keyboard": REVIEW
   "computer.mouse": REVIEW
@@ -50,6 +69,7 @@ actions:
   "credentials.write": DANGEROUS
   "money.transfer": DANGEROUS
   "trading.autonomous": DANGEROUS   # trading sin confirmación
+  "mt5.close_all": DANGEROUS        # cerrar TODAS las posiciones
   "network.firewall": DANGEROUS
   "shell.raw": DANGEROUS
 

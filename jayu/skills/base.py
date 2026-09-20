@@ -34,6 +34,7 @@ class Skill:
     category: str
     tools: dict[str, Callable[..., Any]] = field(default_factory=dict)
     permission_actions: list[str] = field(default_factory=list)
+    tool_actions: dict[str, str] = field(default_factory=dict)
     version: str = "0.1.0"
 
     def describe(self) -> dict[str, Any]:

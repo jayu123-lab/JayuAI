@@ -31,11 +31,14 @@ Orienta el desarrollo por fases. Una fase NO se marca terminada sin tests.
 - [ ] Smart Money Concepts (BOS, CHoCH, sweeps, FVG, OB, premium/discount…).
 - [ ] Construcción de bias BULLISH/BEARISH/NEUTRAL con razones explícitas.
 
-## FASE 6 — Integración MT5
-- [ ] `mt5_connector`: cuenta, posiciones, órdenes, OHLC, ticks, spreads.
-- [ ] Separación ANÁLISIS / EJECUCIÓN. Tres modos
+## FASE 6 — Integración MT5  ✅ (v0.3.0)
+- [x] `mt5_connector`: cuenta, posiciones, órdenes, OHLC, ticks, spreads
+      (`jayu/mt5/connector.py`, validado contra terminal MT5 real).
+- [x] Separación ANÁLISIS / EJECUCIÓN. Tres modos
       (READ_ONLY · CONFIRM · AUTONOMOUS off por defecto).
-- [ ] Lotes, SL/TP, break-even, trailing.
+- [x] Lotes por riesgo (`PositionSizer`), SL/TP, break-even, trailing.
+- [x] Skill `mt5` (lectura SAFE + ejecución gateada por política,
+      confirmación y audit_log).
 
 ## FASE 7 — Visión
 - [ ] Captura de pantalla, detección de botones, lectura de interfaces.

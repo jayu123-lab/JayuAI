@@ -8,6 +8,7 @@ estado exacto.
 
 from __future__ import annotations
 
+import inspect
 import re
 from dataclasses import dataclass
 from threading import RLock
@@ -19,10 +20,14 @@ from ..memory.db import MemoryDB
 from ..memory.store import MemoryStore
 from ..models.providers import LLMError
 from ..models.router import ModelRouter, RouteResult
+from ..mt5.connector import MT5Connector
+from ..mt5.execution import MT5Executor
+from ..mt5.risk import PositionSizer
 from ..security.audit import Auditor, log_with_policy
-from ..security.policy import Classification, Decision, Policy
+from ..security.policy import (Classification, Decision, Policy, Verdict)
 from ..skills.base import SkillError
 from ..skills.builtin import memory as memory_skill_module
+from ..skills.builtin import mt5 as mt5_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.builtin.web import register as register_web
 from ..skills.builtin.market import register as register_market
@@ -60,6 +65,7 @@ class Orchestrator:
         providers_override: dict[str, Any] | None = None,
         confirmer: Callable[[str], bool] | None = None,
         user_name: str = "usuario",
+        mt5_module: Any | None = None,
     ) -> None:
         self._lock = RLock()
         self.settings = settings or Settings()
@@ -75,10 +81,27 @@ class Orchestrator:
         self.registry = SkillRegistry()
         self.confirmer = confirmer or (lambda _action: False)
         self.user_name = user_name
+        # --- MT5 (Fase 6): análisis/lectura + ejecución protegida ---------
+        self.mt5_connector = MT5Connector(mt5_module=mt5_module)
+        self.mt5_executor = MT5Executor(
+            self.mt5_connector,
+            self.policy,
+            self.auditor,
+            self.settings.trading_conf,
+            confirmer=self.confirmer,
+        )
+        self.mt5_sizer = PositionSizer(self.mt5_connector,
+                                       self.settings.trading_conf)
+        self.trading_mode = self.mt5_executor.mode
         self._register_skills()
-        logger.info("orquestador inicializado db_path=%s providers=%s",
-                    self.settings.db_path,
-                    ",".join(self.router.provider_names()))
+        logger.info(
+            "orquestador inicializado db_path=%s providers=%s mt5=%s "
+            "trading_mode=%s",
+            self.settings.db_path,
+            ",".join(self.router.provider_names()),
+            "disponible" if self.mt5_connector.available else "no-instalado",
+            self.trading_mode.value,
+        )
 
     # ------------------------------------------------------------------
     # Skills
@@ -90,6 +113,12 @@ class Orchestrator:
         register_voice(self.registry)
         memory_skill = memory_skill_module.make_store(lambda: self.store)
         self.registry.register(memory_skill)
+        mt5_skill = mt5_skill_module.make_mt5_skill(
+            lambda: self.mt5_connector,
+            lambda: self.mt5_executor,
+            lambda: self.mt5_sizer,
+        )
+        self.registry.register(mt5_skill)
 
     # ------------------------------------------------------------------
     # Disponibilidad de modelos
@@ -145,6 +174,11 @@ class Orchestrator:
             "language": self.settings.config.get("language"),
             "providers": providers,
             "skills": self.registry.list(),
+            "mt5": {
+                "available": self.mt5_connector.available,
+                "connected": self.mt5_connector.connected,
+                "trading_mode": self.trading_mode.value,
+            },
             "db_path": str(self.settings.db_path),
             "working_tasks": self.store.working_tasks(status=None)[:5],
         }
@@ -332,12 +366,19 @@ class Orchestrator:
         if handler is None:
             return {"ok": False,
                     "error": f"Tool '{tool_name}' no existe en '{skill_name}'."}
-        action = payload.pop("_action", skill.permission_actions[0]
-                             if skill.permission_actions else "*")
-        verdict = log_with_policy(self.policy, actor="jayu", action=action,
-                                  auditor=self.auditor,
-                                  tool=f"{skill_name}.{tool_name}",
-                                  session=session_id)
+        action = payload.pop("_action", None)
+        if action is None:
+            action = (skill.tool_actions.get(tool_name)
+                      or (skill.permission_actions[0]
+                          if skill.permission_actions else "*"))
+        # Veredicto crudo de la política (sin resolver confirmación aún):
+        # `log_with_policy` resolvería ASK->DENY y perderíamos el flujo
+        # interactivo. Aquí evaluamos y resolvemos la confirmación nosotros.
+        verdict = self.policy.evaluate(action)
+        self.auditor.record_verdict(actor="jayu", verdict=verdict,
+                                    tool=f"{skill_name}.{tool_name}",
+                                    session=session_id)
+        classification = verdict.classification
         if verdict.decision == Decision.DENY:
             return {"ok": False, "blocked": True,
                     "decision": "deny",
@@ -352,26 +393,45 @@ class Orchestrator:
                 f"(skill {skill_name}.{tool_name}). ¿Aceptas? (S/n)")
             if not user_ok:
                 self.auditor.record(actor="user", action=action,
-                                    classification=verdict.classification,
+                                    classification=classification,
                                     decision=Decision.DENY,
                                     reason="rechazado por el usuario",
                                     tool=f"{skill_name}.{tool_name}",
                                     session=session_id)
                 return {"ok": False, "blocked": True, "decision": "deny",
                         "error": "Rechazado por el usuario."}
+            granted = Verdict(action, classification, Decision.ALLOW,
+                              "confirmado por el usuario")
+            self.auditor.record_verdict(actor="jayu", verdict=granted,
+                                        tool=f"{skill_name}.{tool_name}",
+                                        session=session_id)
         try:
-            result = handler(**payload)
+            # Contexto interno: autorización concedida por la política y
+            # disponibilidad de canal interactivo. Solo se pasan las claves
+            # que el handler acepta (para no romper tools sin **kwargs).
+            signature = inspect.signature(handler)
+            accepts_ctx = (
+                any(p.kind == inspect.Parameter.VAR_KEYWORD
+                    for p in signature.parameters.values())
+                or {"_jayu_authorized", "_jayu_interactive"}
+                <= set(signature.parameters)
+            )
+            if accepts_ctx:
+                result = handler(**payload, _jayu_authorized=True,
+                                 _jayu_interactive=interactive)
+            else:
+                result = handler(**payload)
         except Exception as exc:  # noqa: BLE001
             logger.exception("tool falló %s.%s", skill_name, tool_name)
             self.auditor.record(actor="jayu", action=action,
-                                classification=verdict.classification,
+                                classification=classification,
                                 decision=Decision.DENY,
                                 reason=f"excepción en tool: {exc}",
                                 tool=f"{skill_name}.{tool_name}",
                                 session=session_id)
             return {"ok": False, "error": f"{skill_name}.{tool_name}: {exc}"}
         self.auditor.record(actor="jayu", action=action,
-                            classification=verdict.classification,
+                            classification=classification,
                             decision=Decision.ALLOW,
                             reason="ejecución completada",
                             tool=f"{skill_name}.{tool_name}",
@@ -392,5 +452,6 @@ class Orchestrator:
         )
 
     def close(self) -> None:
+        self.mt5_connector.shutdown()
         self.router.close()
         self.db.close()

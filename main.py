@@ -14,6 +14,7 @@ Comandos dentro del REPL:
     /memory [n]  últimas memorias de largo plazo
     /audit [n]   últimas entradas del audit log
     /forget key  olvida una clave de la memoria de largo plazo
+    /mt5         estado MT5 + cuenta + posiciones (SOLO lectura)
     /voice       estado del pipeline de voz (Fase 2)
     /clear       limpia la conversación de la sesión
     /exit        salir
@@ -96,6 +97,10 @@ def _handle_command(orchestrator: Orchestrator, line: str,
             reach = "OK" if info.get("reachable") else "SIN CONEXIÓN"
             models = ", ".join(info.get("models", [])) or "(ninguno)"
             print(f"  [{name}] {reach}  modelos: {models}")
+        mt5 = status.get("mt5", {})
+        print(f"  MT5: {'disponible' if mt5.get('available') else 'no-instalado'}"
+              f" · conectado: {mt5.get('connected')} · modo trading: "
+              f"{mt5.get('trading_mode')}")
         print(f"  DB: {status.get('db_path')}")
     elif cmd == "/skills":
         for s in orchestrator.registry.list():
@@ -123,11 +128,79 @@ def _handle_command(orchestrator: Orchestrator, line: str,
         print("  Voz pendiente (Fase 2): faster-whisper + Piper + VAD.")
         print("  Estado config: enabled="
               f"{orchestrator.settings.voice_conf.get('enabled', False)}")
+    elif cmd == "/mt5":
+        _cmd_mt5(orchestrator, arg)
     elif cmd == "/clear":
         orchestrator.store.clear_session(session_id)
         print("  Conversación de sesión limpiada.")
     else:
         print(f"  Comando desconocido: {cmd} (usa /help)")
+
+
+def _cmd_mt5(orchestrator: Orchestrator, arg: str | None) -> None:
+    """Estado MT5 (SOLO lectura. Nunca ejecuta órdenes desde este comando)."""
+    from jayu.mt5.connector import MT5Error
+
+    conn = orchestrator.mt5_connector
+    st = conn.status()
+    print(f"  MT5 disponible: {st.get('available')} · conectado: "
+          f"{st.get('connected')} · modo trading: "
+          f"{orchestrator.trading_mode.value}")
+    if not st.get("available") or not st.get("connected"):
+        print("  (Usa la skill mt5 para conectar: connector.connect() "
+              "automático en la primera lectura)")
+        return
+    sub = (arg or "info").lower()
+    try:
+        if sub == "account":
+            acc = conn.account_info()
+            print(f"  Cuenta {acc.get('login')} · {acc.get('company')} · "
+                  f"{acc.get('currency')}")
+            print(f"  balance={acc.get('balance')} equity={acc.get('equity')} "
+                  f"profit={acc.get('profit')} margen={acc.get('margin')} "
+                  f"margen_libre={acc.get('free_margin')}")
+        elif sub in ("pos", "positions"):
+            rows = conn.positions()
+            if not rows:
+                print("  Sin posiciones abiertas.")
+            for p in rows:
+                lado = "COMPRA" if int(p.get("type", 0)) == 0 else "VENTA"
+                print(f"  #{p.get('ticket')} {p.get('symbol')} {lado} "
+                      f"{p.get('volume')} lotes @ {p.get('price_open')} "
+                      f"SL={p.get('sl')} TP={p.get('tp')} P/L={p.get('profit')}")
+        elif sub in ("orders",):
+            rows = conn.orders()
+            if not rows:
+                print("  Sin órdenes pendientes.")
+            for o in rows:
+                print(f"  #{o.get('ticket')} {o.get('symbol')} "
+                      f"tipo={o.get('type')} {o.get('volume')} lotes @ "
+                      f"{o.get('price_open')}")
+        elif sub == "symbols":
+            syms = conn.symbols()
+            print(f"  {len(syms)} símbolos disponibles.")
+            intereses = [s for s in syms
+                         if s.upper() in ("XAUUSD", "EURUSD", "GBPUSD",
+                                          "BTCUSD", "ETHUSD", "XAGUSD",
+                                          "US30", "NAS100", "GER40")]
+            if intereses:
+                print("  Interés:", ", ".join(intereses))
+        else:
+            acc = conn.account_info()
+            rows = conn.positions()
+            tot = sum(float(p.get("volume", 0.0)) for p in rows)
+            print(f"  Cuenta: {acc.get('login')} · balance="
+                  f"{acc.get('balance')} · equity={acc.get('equity')}")
+            print(f"  Posiciones: {len(rows)} · volumen total {tot}")
+            if rows:
+                for p in rows[:5]:
+                    lado = ("COMPRA" if int(p.get("type", 0)) == 0
+                            else "VENTA")
+                    print(f"    #{p.get('ticket')} {p.get('symbol')} {lado} "
+                          f"{p.get('volume')} @ {p.get('price_open')} "
+                          f"P/L={p.get('profit')}")
+    except MT5Error as exc:
+        print(f"  (lectura MT5 no disponible) {exc}")
 
 
 def _render(result) -> str:
