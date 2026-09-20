@@ -126,6 +126,7 @@ class Settings:
         self.permissions_conf = self._load("permissions.yaml", env_overrides=env_overrides)
         self.trading_conf = self._load("trading.yaml", env_overrides=env_overrides)
         self.voice_conf = self._load("voice.yaml", env_overrides=env_overrides)
+        self.research_conf = self._load("research.yaml", env_overrides=env_overrides)
 
     def _load(self, name: str, *, env_overrides: bool) -> dict[str, Any]:
         data = load_data_file(self.config_dir / name)

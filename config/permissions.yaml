@@ -37,6 +37,16 @@ actions:
   "voice.stt": SAFE           # transcribir audio local
   "voice.listen": SAFE        # grabar del micrófono (local)
 
+  # ---------- Investigación web (Fase 3): lectura de fuentes reales ----------
+  "web.search": SAFE          # búsqueda real en DuckDuckGo/SearXNG
+  "web.read": SAFE            # leer una página web
+  "web.summarize": SAFE       # resumir (LLM local si está)
+
+  # ---------- Especialista en oro (Fase 3): análisis, NUNCA ejecuta ----------
+  "gold.context": SAFE
+  "gold.levels": SAFE
+  "gold.calendar": SAFE
+
   # ---------- MT5: LECTURA (análisis) SIEMPRE permitida ----------
   "mt5.status": SAFE
   "mt5.account": SAFE

@@ -90,7 +90,7 @@ def _handle_command(orchestrator: Orchestrator, line: str,
         print(__doc__.split("Comandos dentro")[1])
     elif cmd in ("/status", "/models"):
         status = orchestrator.status()
-        print(f"  JAYU_JAR  v{status.get('name')} · idioma "
+        print(f"  JayuAI  v{status.get('name')} · idioma "
               f"{status.get('language')} · autonomía: "
               f"{status.get('autonomy_level')}")
         for name, info in status.get("providers", {}).items():
@@ -128,6 +128,8 @@ def _handle_command(orchestrator: Orchestrator, line: str,
         _cmd_voice(orchestrator, arg)
     elif cmd == "/mt5":
         _cmd_mt5(orchestrator, arg)
+    elif cmd == "/gold":
+        _cmd_gold(orchestrator, arg)
     elif cmd == "/clear":
         orchestrator.store.clear_session(session_id)
         print("  Conversación de sesión limpiada.")
@@ -223,6 +225,40 @@ def _cmd_voice(orchestrator: Orchestrator, arg: str | None) -> None:
             print(f"  ✔ Dicho: {parts[1]!r}  [{out.get('engine')}]")
         else:
             print(f"  ✘ No se pudo hablar: {out.get('error')}")
+
+
+def _cmd_gold(orchestrator: Orchestrator, arg: str | None) -> None:
+    """Especialista en oro: context | levels | calendar (SOLO lectura)."""
+    sub = (arg or "context").lower()
+    skill = "gold_analyst"
+    if sub == "levels":
+        res = orchestrator.run_skill(skill, "levels", {"symbol": "XAUUSD"},
+                                     interactive=False)
+        print(f"  Niveles XAUUSD: trend={res.get('trend')}")
+        for key, val in (res.get("cifras_redondas") or {}).items():
+            if key != "nota":
+                print(f"    cifra: {val}")
+        struct = res.get("estructura")
+        if struct:
+            print(f"    estructura: {struct}")
+        return
+    if sub == "calendar":
+        res = orchestrator.run_skill(skill, "calendar", {}, interactive=False)
+        for w in res.get("semanas", []):
+            print(f"  · {w.get('cadena')}")
+        return
+    res = orchestrator.run_skill(skill, "drivers", {"symbol": "XAUUSD"},
+                                 interactive=False)
+    vivo = res.get("en_vivo", {})
+    for sym, info in vivo.items():
+        estado = "✔" if info.get("dato") == "ok" else "— pendiente"
+        print(f"  {sym:8s} {info.get('precio')}  {estado}")
+    ratio = (res.get("metricas") or {}).get("ratio_oro_plata")
+    if ratio:
+        print(f"  Ratio oro/plata: {ratio} "
+              f"({(res.get('metricas') or {}).get('lectura_ratio')})")
+    print(f"  Drivers disponibles: "
+          f"{[d['ambito'] for d in res.get('drivers', [])]}")
 
 
 def _render(result) -> str:

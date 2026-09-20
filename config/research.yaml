@@ -1,0 +1,20 @@
+# ============================================================
+# JayuAI — Configuración de investigación web (FASE 3)
+# ============================================================
+# Providers de búsqueda: duckduckgo (sin API key) | searxng (defina
+# SEARXNG_URL en el entorno si tiene una instancia propia).
+# Sin red o sin proveedor -> la skill devuelve ok=False con el motivo real.
+
+search:
+  provider: duckduckgo
+  max_results: 8
+  region: wt-wt          # wt-wt = mundial (neutral)
+  timeout: 15
+
+fetch:
+  timeout: 20
+  max_chars: 12000       # texto máximo extraído por página
+
+summary:
+  max_summary_chars: 1400
+  use_llm: true          # resumen generativo vía LLM local; degrada a extractivo

@@ -23,6 +23,8 @@ from ..models.router import ModelRouter, RouteResult
 from ..mt5.connector import MT5Connector
 from ..mt5.execution import MT5Executor
 from ..mt5.risk import PositionSizer
+from ..research.fetcher import PageFetcher
+from ..research.search import WebSearch
 from ..security.audit import Auditor, log_with_policy
 from ..security.policy import (Classification, Decision, Policy, Verdict)
 from ..skills.base import SkillError
@@ -31,8 +33,9 @@ from ..skills.builtin import mt5 as mt5_skill_module
 from ..skills.builtin import market as market_skill_module
 from ..skills.builtin import multiagent as multiagent_skill_module
 from ..skills.builtin import voice as voice_skill_module
+from ..skills.builtin import web as web_skill_module
+from ..skills.builtin import gold as gold_skill_module
 from ..skills.builtin.system import register as register_system
-from ..skills.builtin.web import register as register_web
 from ..skills.registry import SkillRegistry
 from ..voice.stt import SpeechToText
 from ..voice.tts import TextToSpeech
@@ -111,6 +114,18 @@ class Orchestrator:
             device=stt_cfg.get("device", "cpu"),
             compute_type=stt_cfg.get("compute_type", "int8"),
         )
+        # --- Investigación web (Fase 3): search + fetch desde research.yaml --
+        rconf = self.settings.research_conf or {}
+        self.research_search = WebSearch(
+            provider=(rconf.get("search", {}) or {}).get("provider", "duckduckgo"),
+            max_results=int((rconf.get("search", {}) or {}).get("max_results", 8)),
+            region=(rconf.get("search", {}) or {}).get("region", "wt-wt"),
+            timeout=float((rconf.get("search", {}) or {}).get("timeout", 15)),
+        )
+        self.research_fetcher = PageFetcher(
+            timeout=float((rconf.get("fetch", {}) or {}).get("timeout", 20)),
+            max_chars=int((rconf.get("fetch", {}) or {}).get("max_chars", 12000)),
+        )
         self._register_skills()
         logger.info(
             "orquestador inicializado db_path=%s providers=%s mt5=%s "
@@ -126,7 +141,14 @@ class Orchestrator:
     # ------------------------------------------------------------------
     def _register_skills(self) -> None:
         register_system(self.registry)
-        register_web(self.registry)
+        web_skill = web_skill_module.make_web_skill(
+            lambda: self.research_search,
+            lambda: self.research_fetcher,
+            chat_fn=self._llm_text)
+        self.registry.register(web_skill)
+        gold_skill = gold_skill_module.make_gold_skill(
+            lambda: self.mt5_connector)
+        self.registry.register(gold_skill)
         voice_skill = voice_skill_module.make_voice_skill(
             lambda: self.tts, lambda: self.stt)
         self.registry.register(voice_skill)
@@ -152,6 +174,21 @@ class Orchestrator:
     # ------------------------------------------------------------------
     # Disponibilidad de modelos
     # ------------------------------------------------------------------
+    def _llm_text(self, prompt: str) -> str:
+        """Texto simple vía LLM local (para resúmenes). Vacío si no hay modelo."""
+        try:
+            route = self.router.route(prompt, intent="general", complexity=1)
+            provider_name, model, _exact = self._pick_working_model(route)
+            if not model:
+                return ""
+            provider = self.router.providers[provider_name]
+            resp = provider.chat(
+                [{"role": "user", "content": prompt}], model=model,
+                temperature=0.3, max_tokens=400)
+            return str(resp.get("content", "")).strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
     def _available_models(self, provider_name: str) -> list[str]:
         provider = self.router.providers.get(provider_name)
         if provider is None:

@@ -245,6 +245,57 @@ class FakeProvider:
 
 
 # ----------------------------------------------------------------------
+# Fakes de investigación web (Fase 3): nunca tocan la red.
+# ----------------------------------------------------------------------
+
+class FakeSearch:
+    """WebSearch falso: resultados fijos (sin red ni proveedor)."""
+
+    def __init__(self, *, results: list[dict] | None = None,
+                 available: bool = True) -> None:
+        self._results = results or [
+            {"title": "El oro sube tras débiles datos de empleo",
+             "url": "https://ejemplo.test/oro-empleo",
+             "snippet": "El oro avanza ante expectativas de recortes de la FED."},
+            {"title": "Ratio oro/plata en máximos",
+             "url": "https://ejemplo.test/ratio",
+             "snippet": "La plata se queda atrás frente al oro."},
+        ]
+        self.available_flag = available
+        self.queries: list[str] = []
+
+    def search(self, query: str, max_results: int | None = None) -> dict:
+        self.queries.append(query)
+        if not self.available_flag:
+            return {"ok": False, "error": "proveedor no disponible (fake)"}
+        return {"ok": True, "query": query, "provider": "fake",
+                "results": self._results[: int(max_results or 8)]}
+
+
+class FakeFetcher:
+    """PageFetcher falso: texto fijo (sin HTTP)."""
+
+    def __init__(self, *, text: str | None = None,
+                 fail: bool = False) -> None:
+        self._text = text or (
+            "El oro cotiza al alza mientras los inversores esperan el dato "
+            "de inflación. Las tasas reales y el dólar siguen marcando el "
+            "ritmo del metal precioso. Los bancos centrales acumulan oro. "
+            "El ratio oro/plata sigue elevado. La FED mantiene su "
+            "atención en los datos de empleo y precios.")
+        self.fail = fail
+        self.urls: list[str] = []
+
+    def fetch(self, url: str) -> dict:
+        self.urls.append(url)
+        if self.fail:
+            return {"ok": False, "error": f"HTTP falló para {url} (fake)"}
+        return {"ok": True, "url": url, "title": "Página de ejemplo",
+                "chars": len(self._text), "text": self._text,
+                "links": ["https://ejemplo.test/1"]}
+
+
+# ----------------------------------------------------------------------
 # Fakes de voz (Fase 2): NEVER tocan micrófono, red ni altavoces.
 # ----------------------------------------------------------------------
 
