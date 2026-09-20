@@ -20,9 +20,15 @@ class OCRUnavailable(Exception):
 
 def _elapse_to_s(elapse) -> float:
     """RapidOCR devuelve elapse como lista [det, cls, recog] o float."""
+    if elapse is None:
+        return 0.0
     if isinstance(elapse, (list, tuple)):
-        return round(sum(float(e) for e in elapse if e is not None), 3)
-    return round(float(elapse), 3)
+        vals = [float(e) for e in elapse if e is not None]
+        return round(sum(vals), 3)
+    try:
+        return round(float(elapse), 3)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def ocr_image(image_path: str | Path, *, lang: str = "es",
