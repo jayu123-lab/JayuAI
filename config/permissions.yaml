@@ -47,6 +47,12 @@ actions:
   "gold.levels": SAFE
   "gold.calendar": SAFE
 
+  # ---------- Visión (Fase 7): leer la pantalla/archivos localmente ----------
+  "vision.capture": SAFE          # screenshot local a PNG
+  "vision.ocr": SAFE              # OCR local (RapidOCR, sin nube)
+  "vision.capture_read": SAFE     # screenshot + OCR combinados
+  "vision.locate": SAFE           # coordenadas de un patrón (solo lectura)
+
   # ---------- MT5: LECTURA (análisis) SIEMPRE permitida ----------
   "mt5.status": SAFE
   "mt5.account": SAFE

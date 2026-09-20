@@ -35,6 +35,7 @@ from ..skills.builtin import multiagent as multiagent_skill_module
 from ..skills.builtin import voice as voice_skill_module
 from ..skills.builtin import web as web_skill_module
 from ..skills.builtin import gold as gold_skill_module
+from ..skills.builtin import vision as vision_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.registry import SkillRegistry
 from ..voice.stt import SpeechToText
@@ -141,6 +142,7 @@ class Orchestrator:
     # ------------------------------------------------------------------
     def _register_skills(self) -> None:
         register_system(self.registry)
+        self.registry.register(vision_skill_module.make_vision_skill())
         web_skill = web_skill_module.make_web_skill(
             lambda: self.research_search,
             lambda: self.research_fetcher,
