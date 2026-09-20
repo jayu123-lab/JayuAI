@@ -1,11 +1,14 @@
-"""Skills integradas de JAYU_JAR (Fase 1 + Fase 6 MT5).
+"""Skills integradas de JAYU_JAR (Fases 1, 5 y 6).
 
-Nota de honestidad: las skills web/market/voice están registradas pero NO
-implementadas todavía (Fases 3/5). Sus tools devuelven un resultado explícito
+Nota de honestidad: las skills web/voice están registradas pero NO
+implementadas todavía (Fases 3/2). Sus tools devuelven un resultado explícito
 con ok=False indicando que la capacidad aún no existe. NO se simulan datos reales.
 
-`mt5` NO se registra aquí: necesita el connector/executor vivos del
-orquestador, que los inyecta vía `make_mt5_skill(connector, executor, sizer)`.
+`mt5` y `market_intelligence` NO se registran aquí: necesitan el
+connector/executor vivos del orquestador. `market` se registra aparte vía
+`make_market_skill(connector)` (Fase 5); `mt5` vía `make_mt5_skill(...)` (Fase 6).
+El `register()` de `market` se conserva para compatibilidad (connector
+desconectado: nunca arranca el terminal desde los tests).
 """
 
 from __future__ import annotations

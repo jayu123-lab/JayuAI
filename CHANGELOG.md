@@ -2,6 +2,39 @@
 
 Todas las decisiones y cambios relevantes de JAYU_JAR.
 
+## [0.4.0] — 2026-09-20 — FASE 5: market intelligence (análisis real MT5)
+
+### Añadido
+- **`jayu/market/` — análisis de mercados sobre velas reales de MT5**:
+  - `indicators.py` — SMA/EMA/RSI(Wilder)/ATR(Wilder) con pandas puro
+    (sin TA-Lib ni Internet; determinista y testable).
+  - `structure.py` — swings (fractales), secuencia HH/HL/LH/LL, tendencia
+    UP/DOWN/RANGE y rupturas BOS/CHoCH confirmadas por cierre.
+  - `smc.py` — Fair Value Gaps (con mitigación), Order Blocks y posición
+    premium/discount dentro del rango reciente.
+  - `bias.py` — `BiasEngine`: puntúa (+1/-1/0) cada componente (EMA20/50,
+    RSI14, estructura, BOS/CHoCH, premium/discount) y emite
+    BULLISH/BEARISH/NEUTRAL con razones explícitas en lenguaje natural.
+  - `analyzer.py` — `MarketAnalyzer`: pipeline completo
+    (rates MT5 → DataFrame → indicadores + estructura + SMC + bias).
+- **Skill `market_intelligence` REAL**: tools `quote rates structure analyze
+  bias` (solo lectura, SAFE). Reemplaza al stub honesto de Fase 1: si MT5 no
+  está disponible devuelve error explícito (nunca inventa precios ni análisis).
+- **Orquestador**: registra la skill market con el `MT5Connector` vivo;
+  nuevo comando de análisis disponible vía `run_skill("market_intelligence", ...)`.
+- **Permisos**: `market.quote / rates / structure / analyze / bias` (SAFE).
+- **Tests** — 22 nuevos (indicadores, estructura/SMC/bias, analyzer, skill por
+  orquestador con FakeMT5 y sin terminal). Total 109 pasan.
+
+### Validación con datos reales
+- Pipeline ejecutado contra el terminal MT5 (FTMO) en XAUUSD H1: bias
+  BULLISH score 3 con razones (EMA20/50, RSI 55.2, estructura HH/HL,
+  zona premium), 6 FVGs, 4 order blocks, ATR14 0.39%. Sin ejecutar nada.
+
+### Corregido
+- `MarketAnalyzer._pipeline`: quote opcional soporta connectors sin `quote`
+  (análisis EDA directo sobre DataFrame).
+
 ## [0.3.0] — 2026-09-20 — FASE 6: integración MT5 (análisis + ejecución protegida)
 
 ### Añadido

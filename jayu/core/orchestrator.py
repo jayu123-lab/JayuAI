@@ -28,9 +28,9 @@ from ..security.policy import (Classification, Decision, Policy, Verdict)
 from ..skills.base import SkillError
 from ..skills.builtin import memory as memory_skill_module
 from ..skills.builtin import mt5 as mt5_skill_module
+from ..skills.builtin import market as market_skill_module
 from ..skills.builtin.system import register as register_system
 from ..skills.builtin.web import register as register_web
-from ..skills.builtin.market import register as register_market
 from ..skills.builtin.voice import register as register_voice
 from ..skills.registry import SkillRegistry
 from .intent import classify_intent
@@ -109,10 +109,12 @@ class Orchestrator:
     def _register_skills(self) -> None:
         register_system(self.registry)
         register_web(self.registry)
-        register_market(self.registry)
         register_voice(self.registry)
         memory_skill = memory_skill_module.make_store(lambda: self.store)
         self.registry.register(memory_skill)
+        market_skill = market_skill_module.make_market_skill(
+            lambda: self.mt5_connector)
+        self.registry.register(market_skill)
         mt5_skill = mt5_skill_module.make_mt5_skill(
             lambda: self.mt5_connector,
             lambda: self.mt5_executor,

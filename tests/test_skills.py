@@ -58,9 +58,14 @@ def test_allowed_tools_under_policy():
     assert allowed["system"] == ["system.status", "system.ping"]
 
 
-def test_market_skill_is_honest_stub():
+def test_market_skill_honesto_sin_terminal():
+    """Fase 5: market_intelligence es REAL; sin terminal MT5 devuelve un
+    error explícito (nunca inventa análisis)."""
     reg = SkillRegistry()
     register_market(reg)
-    res = reg.get("market_intelligence").tools["quote"]("XAUUSD")
+    skill = reg.get("market_intelligence")
+    assert "analyze" in skill.tools
+    res = skill.tools["quote"]("XAUUSD")
     assert res["ok"] is False
-    assert res["implemented"] is False
+    assert res.get("error")
+    assert "implemented" not in res  # ya no es un stub

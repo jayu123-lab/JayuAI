@@ -103,13 +103,22 @@ módulo. El backend vectorial (ChromaDB) se activará cuando esté instalado.
 - Toda ejecución pasa por política (REVIEW/DANGEROUS) + confirmación humana +
   `audit_log`. En `READ_ONLY` no se ejecuta nada.
 
+### `jayu/market/` — market intelligence (Fase 5, datos MT5)
+- `indicators.py` — SMA/EMA/RSI/ATR (pandas, Wilder).
+- `structure.py` — swings, secuencia HH/HL/LH/LL, BOS/CHoCH.
+- `smc.py` — FVG, Order Blocks, premium/discount.
+- `bias.py` — `BiasEngine` → BULLISH/BEARISH/NEUTRAL con razones.
+- `analyzer.py` — `MarketAnalyzer`: velas MT5 → análisis completo.
+- Todo es ANÁLISIS puro; nada de esto ejecuta órdenes.
+
 ### `jayu/skills/` — capacidades extensibles
 Cada skill registra nombre, descripción, categoría, herramientas y acciones
 de permiso (por tool vía `tool_actions`). Skills actuales:
 - `system`, `memory` (funcionales),
 - `mt5` (Fase 6): lectura SAFE + ejecución gateada,
-- `web_research` y `market_intelligence` (registradas, devuelven `ok=False`
-  hasta su fase), `voice` (Fase 2).
+- `market_intelligence` (Fase 5): análisis real sobre MT5 (solo lectura),
+- `web_research` (Fase 3) y `voice` (Fase 2): registradas, devuelven
+  `ok=False` explícito hasta su fase (no se simula nada).
 
 ### `main.py` — terminal
 REPL con comandos `/status /models /skills /memory /audit /forget /mt5 /voice
@@ -118,7 +127,7 @@ REPL con comandos `/status /models /skills /memory /audit /forget /mt5 /voice
 ## Fases (ROADMAP en `ROADMAP.md`)
 
 1. ✅ Core + modelos + memoria + terminal
-2. [ ] Voz       3. [ ] Web      4. [ ] PC       5. [ ] Mercados
+2. [ ] Voz       3. [ ] Web      4. [ ] PC       5. ✅ Mercados
 6. ✅ MT5       7. [ ] Visión    8. [ ] Multiagente   9. [ ] Self-improvement
 10. [ ] UI       11. [ ] Optimización     12. [ ] Testing exhaustivo
 

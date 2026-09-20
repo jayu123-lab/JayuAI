@@ -26,10 +26,12 @@ Orienta el desarrollo por fases. Una fase NO se marca terminada sin tests.
 - [ ] `computer_control`: whitelist de acciones + UI Automation (pywinauto).
 - [ ] Abrir/cerrar apps, mover ventanas, leer pantalla (visión básica).
 
-## FASE 5 — Market intelligence
-- [ ] Datos reales: precios/estructura/volatilidad/volumen.
-- [ ] Smart Money Concepts (BOS, CHoCH, sweeps, FVG, OB, premium/discount…).
-- [ ] Construcción de bias BULLISH/BEARISH/NEUTRAL con razones explícitas.
+## FASE 5 — Market intelligence  ✅ (v0.4.0)
+- [x] Datos reales: precios/estructura/volatilidad/volumen (vía MT5Connector).
+- [x] Smart Money Concepts: swings y estructura (HH/HL/LH/LL), BOS/CHoCH,
+      Fair Value Gaps, Order Blocks, premium/discount.
+- [x] Construcción de bias BULLISH/BEARISH/NEUTRAL con razones explícitas.
+- [x] Skill `market_intelligence` real (analyze/bias/structure/quote/rates).
 
 ## FASE 6 — Integración MT5  ✅ (v0.3.0)
 - [x] `mt5_connector`: cuenta, posiciones, órdenes, OHLC, ticks, spreads

@@ -19,6 +19,11 @@ actions:
   "web.search": SAFE
   "web.read": SAFE
   "market.read": SAFE          # leer cotizaciones/estructura (sin ejecutar)
+  "market.quote": SAFE         # cotización puntual (Fase 5)
+  "market.rates": SAFE         # velas OHLC
+  "market.structure": SAFE     # swings/BOS/CHoCH
+  "market.analyze": SAFE       # pipeline completo de análisis
+  "market.bias": SAFE          # bias BULLISH/BEARISH/NEUTRAL
   "model.ping": SAFE
   "model.list": SAFE
   "llm.chat": SAFE
